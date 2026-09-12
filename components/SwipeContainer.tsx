@@ -27,14 +27,17 @@ export function SwipeContainer({ children }: SwipeContainerProps) {
   }
 
   return (
-    <div className="relative h-screen w-full bg-black">
+    <div className="relative h-dvh w-full bg-black">
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex h-full w-full snap-x snap-mandatory overflow-x-auto"
+        className="flex h-full w-full touch-pan-x snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
       >
         {slides.map((slide, i) => (
-          <div key={i} className="h-full w-full flex-shrink-0 snap-center">
+          <div
+            key={i}
+            className="h-full w-full flex-shrink-0 snap-center [scroll-snap-stop:always]"
+          >
             {slide}
           </div>
         ))}
