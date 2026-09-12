@@ -6,13 +6,16 @@ spec 001 のバージョン系列を踏襲する（Next.js 16.x / Tailwind CSS 4
 | 用途 | 選定 | 理由 |
 |---|---|---|
 | DB | Node.js 組み込み `node:sqlite`（`DatabaseSync`） | 常時起動環境（本devcontainer/自前サーバー）を前提に確定。追加npm依存なしで使える（Node 24で実験フラグ不要で動作確認済み）。ファイルベースで永続化がシンプル。 |
+| DBマイグレーション | 自作の軽量ランナー（`migrations/*.sql` 連番＋`schema_migrations`テーブル） | 依存パッケージなしで`node:sqlite`にそのまま使える。検討した`umzug`/`drizzle-orm`等は却下（`drizzle-orm`の`node:sqlite`対応はRC版のみ、`kysely`用`node:sqlite`アダプタは個人メンテナの超小規模パッケージでリスクあり、`umzug`はテーブル数が少ない今の規模には過剰）。テーブルが増えた際は`migrations/0002_*.sql`を追加するだけで拡張できる。 |
 | チャート描画 | `recharts` | Reactとの統合が簡単な折れ線チャートライブラリ。実装時は `dataviz` スキルの配色ガイドに従う。 |
 | 定期実行 | Next.js `instrumentation.ts` の `register()` + `setInterval` | 常時起動サーバー前提なので外部cron/サーバーレス向けスケジューラは不要。サーバー起動時に1回登録するだけで完結。 |
 
 ## Architecture
-- `instrumentation.ts`（プロジェクトルート）: サーバー起動時に DB 初期化（テーブル作成）を行い、`setInterval` で `collectRate()` を1分間隔で呼び出す。
+- `instrumentation.ts`（プロジェクトルート）: サーバー起動時に DB 初期化（マイグレーション適用）を行い、`setInterval` で `collectRate()` を1分間隔で呼び出す。
 - `lib/fetchTicker.ts`: spec 001 の `app/api/rate/usd-jpy/route.ts` にあった上流ticker取得ロジックを共通化して抽出（DRY。route.ts側もこれを使うようリファクタする）。
-- `lib/db.ts`: SQLiteコネクションのシングルトン、テーブル初期化、`insertCandle()` / `getHistory(range)` などのクエリヘルパー。DBファイルは `data/fx.db`（`.gitignore`に追加）。
+- `lib/migrate.ts`: `migrations/*.sql` をファイル名順に読み込み、未適用のものだけ`node:sqlite`に直接`exec`して適用し、`schema_migrations`テーブルに適用済みとして記録する自作ランナー。
+- `migrations/0001_create_rate_candles.sql`: `rate_candles`テーブルとインデックスを作成するDDL。
+- `lib/db.ts`: SQLiteコネクションのシングルトン（`getDb()`内で`runMigrations()`を呼ぶ）、`insertCandle()` / `getHistory(range)` などのクエリヘルパー。DBファイルは `data/fx.db`（`.gitignore`に追加）。
 - `lib/collectRate.ts`: `fetchTicker()` で取得し、現在時刻を収集間隔（1分）でバケット化した `bucket_start` を計算して `insertCandle()` で保存（`INSERT OR IGNORE`。同一バケットへの二重保存は主キー制約で自然に防げる＝Req 1.3）。失敗時は `console.error` のみでスケジュールは継続（Req 1.2）。
 - `app/api/rate/usd-jpy/history/route.ts`: `GET ?range=1d|1w|1m` でDBから期間内の履歴を返す。
 - `app/chart/page.tsx`: チャート画面（Client Component）。今回は `/chart` に直接置く独立画面（spec 003 でスワイプ導線に統合される前提）。期間セレクター＋チャート＋空状態表示。spec 001 と同じダークテーマ（`bg-black` / `bg-zinc-900`）・縦横レイアウトを踏襲。
@@ -41,9 +44,10 @@ type RateCandle = {
 };
 ```
 
-SQLiteスキーマ:
+SQLiteスキーマ（`migrations/0001_create_rate_candles.sql`で管理。新しいマイグレーションが必要になったら
+`migrations/0002_*.sql`のように連番で追加する）:
 ```sql
-CREATE TABLE IF NOT EXISTS rate_candles (
+CREATE TABLE rate_candles (
   symbol TEXT NOT NULL,
   interval TEXT NOT NULL,
   bucket_start TEXT NOT NULL,
@@ -55,8 +59,7 @@ CREATE TABLE IF NOT EXISTS rate_candles (
   source TEXT NOT NULL,
   PRIMARY KEY (symbol, interval, bucket_start)
 );
-CREATE INDEX IF NOT EXISTS idx_rate_candles_range
-  ON rate_candles(symbol, interval, bucket_start);
+CREATE INDEX idx_rate_candles_range ON rate_candles(symbol, interval, bucket_start);
 ```
 `PRIMARY KEY (symbol, interval, bucket_start)` が同一バケットの重複書き込みを防ぐ主キー制約になる
 （`INSERT OR IGNORE`で二重挿入を無害化）。将来の backfill spec もこのテーブル・同じキーに
@@ -79,6 +82,7 @@ CREATE INDEX IF NOT EXISTS idx_rate_candles_range
 ## Key Files
 - `instrumentation.ts`
 - `lib/fetchTicker.ts`（spec 001の`route.ts`から抽出・共通化）
+- `lib/migrate.ts`（自作マイグレーションランナー）, `migrations/0001_create_rate_candles.sql`
 - `lib/db.ts`, `lib/collectRate.ts`
 - `app/api/rate/usd-jpy/route.ts`（`fetchTicker()`を使うようリファクタ、既存のI/Fは変更しない）
 - `app/api/rate/usd-jpy/history/route.ts`
