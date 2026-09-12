@@ -1,42 +1,50 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { RateCard, type RateCardProps } from "@/components/RateCard";
 import type { UsdJpyRate } from "@/lib/types";
+
+/**
+ * Pure data fetch — does not call setState itself. Callers (the mount
+ * effect, the refresh button) apply the result via `.then(setState)`,
+ * since setState inside a promise-chain callback is what
+ * react-hooks/set-state-in-effect exempts (a setState call reachable
+ * synchronously from an effect's own body is what it flags).
+ */
+async function loadRate(): Promise<RateCardProps> {
+  try {
+    const res = await fetch("/api/rate/usd-jpy");
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(body?.error ?? `Request failed with status ${res.status}`);
+    }
+    const rate = (await res.json()) as UsdJpyRate;
+    return { status: "loaded", rate };
+  } catch (error) {
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
 
 export default function Home() {
   const [state, setState] = useState<RateCardProps>({ status: "loading" });
 
-  // Note: no setState call before the first `await` here — a synchronous
-  // setState in an effect's call chain trips react-hooks/set-state-in-effect.
-  // The initial "loading" state comes from useState's initial value instead.
-  const fetchRate = useCallback(async () => {
-    try {
-      const res = await fetch("/api/rate/usd-jpy");
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error ?? `Request failed with status ${res.status}`);
-      }
-      const rate = (await res.json()) as UsdJpyRate;
-      setState({ status: "loaded", rate });
-    } catch (error) {
-      setState({
-        status: "error",
-        message: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
+  useEffect(() => {
+    let cancelled = false;
+    loadRate().then((result) => {
+      if (!cancelled) setState(result);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  useEffect(() => {
-    fetchRate();
-  }, [fetchRate]);
-
-  // Resetting to "loading" happens here instead, since this only ever runs
-  // from the button's click handler, not from the effect above.
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = () => {
     setState({ status: "loading" });
-    fetchRate();
-  }, [fetchRate]);
+    loadRate().then(setState);
+  };
 
   const cardProps: RateCardProps =
     state.status === "loading" ? state : { ...state, onRefresh: handleRefresh };
