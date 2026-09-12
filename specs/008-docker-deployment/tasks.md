@@ -1,0 +1,7 @@
+# 運用のためのDockerfile — Tasks
+
+- [x] 1. `next.config.ts` に `output: "standalone"` を追加し、`npm run build` で `.next/standalone/server.js` が生成されることを確認する（Req: 1.3 / Design: Architecture）
+- [x] 2. `Dockerfile` を新規作成する（`deps`/`builder`/`runner` の3ステージ、`node:24-slim` ベース、`.next/standalone`・`.next/static`・`public`・`migrations` を `runner` ステージにコピー、`CMD ["node", "server.js"]`）（Req: 1.1, 1.2, 1.3, 2.1 / Design: Architecture）
+- [x] 3. `.dockerignore` を新規作成する（`node_modules`, `.next`, `data`, `storybook-static`, `.git`, `.devcontainer`, `.env*` を除外）（Req: 3.2 / Design: Architecture）
+- [x] 4. 手動検証する: `docker build` でイメージが作成できること、`docker run -e ANTHROPIC_API_KEY=... -v <volume>:/app/data -p 3000:3000` で起動しアプリ・既存APIが動作すること、spec 006 のinfoログがコンテナログに出続けること、コンテナ再作成後もvolume経由でDB内容が保持されることを確認する（Req: 2.2, 3.1 / Design: Testing Approach）※この開発環境にDocker CLI自体が無いため`docker build`/`docker run`は未実施。代わりに`runner`ステージと同じファイル構成（`.next/standalone` + `.next/static` + `public` + `migrations`、`data`は含めない）を組み立てて`node server.js`を直接実行し、(1)空の`data/`からDBが自動初期化されること、(2)トップページ・静的アセット・既存APIが200を返すこと、(3)spec 006のinfoログ（`[collectRate] skipped: ...`）が出ること、(4)プロセス再起動後も同じ`data/`ディレクトリでスキーマ・内容が保持されることを確認した。Docker自体でのビルド・起動は別途Docker環境で要確認
+- [x] 5. `scripts/docker-run.sh` を新規作成する（`docker build` + `docker run`を`data/`のvolumeマウント・`ANTHROPIC_API_KEY`の実行時env var注入付きでまとめて実行する起動スクリプト）。Dockerfileにもvolumeマウントに関するコメントを追加する（spec-reviewで指摘されたReq 2.1の未達を解消。Req: 2.1, 3.1）
