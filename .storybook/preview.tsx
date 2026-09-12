@@ -1,0 +1,39 @@
+import type { Preview } from '@storybook/nextjs-vite'
+import '../app/globals.css'
+
+const preview: Preview = {
+  parameters: {
+    controls: {
+      matchers: {
+       color: /(background|color)$/i,
+       date: /Date$/i,
+      },
+    },
+
+    a11y: {
+      // 'todo' - show a11y violations in the test UI only
+      // 'error' - fail CI on a11y violations
+      // 'off' - skip a11y checks entirely
+      test: 'todo'
+    },
+
+    // Mobile portrait/landscape presets so orientation-dependent layouts
+    // (Tailwind `portrait:` / `landscape:` variants) can be previewed accurately.
+    viewport: {
+      options: {
+        mobilePortrait: {
+          name: 'Mobile Portrait',
+          styles: { width: '390px', height: '844px' },
+          type: 'mobile',
+        },
+        mobileLandscape: {
+          name: 'Mobile Landscape',
+          styles: { width: '844px', height: '390px' },
+          type: 'mobile',
+        },
+      },
+    },
+  },
+};
+
+export default preview;
