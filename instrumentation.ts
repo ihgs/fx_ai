@@ -2,6 +2,8 @@ const COLLECTION_INTERVAL_MS = 60_000; // 1分（Design: 定期実行）
 const ANALYSIS_INTERVAL_MS = 60 * 60_000; // 1時間（Design: AI分析の定期実行）
 const ANALYSIS_JST_START_HOUR = 7;
 const ANALYSIS_JST_END_HOUR = 22;
+// 為替市場の休場（土曜朝〜月曜朝）に合わせたスキップ境界時刻
+const WEEKEND_CLOSURE_BOUNDARY_HOUR = 7;
 
 function currentJstHour(): number {
   const formatter = new Intl.DateTimeFormat("en-US", {
@@ -10,6 +12,23 @@ function currentJstHour(): number {
     hourCycle: "h23",
   });
   return Number(formatter.format(new Date()));
+}
+
+function isJstWeekendMarketClosed(): boolean {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tokyo",
+    weekday: "short",
+    hour: "numeric",
+    hourCycle: "h23",
+  });
+  const parts = formatter.formatToParts(new Date());
+  const weekday = parts.find((part) => part.type === "weekday")?.value;
+  const hour = Number(parts.find((part) => part.type === "hour")?.value);
+
+  if (weekday === "Sun") return true;
+  if (weekday === "Sat") return hour >= WEEKEND_CLOSURE_BOUNDARY_HOUR;
+  if (weekday === "Mon") return hour < WEEKEND_CLOSURE_BOUNDARY_HOUR;
+  return false;
 }
 
 export async function register() {
@@ -22,9 +41,13 @@ export async function register() {
   const { runAnalysis } = await import("@/lib/analyzeRate");
 
   initDb();
-  setInterval(collectRate, COLLECTION_INTERVAL_MS);
+  setInterval(() => {
+    if (isJstWeekendMarketClosed()) return;
+    collectRate();
+  }, COLLECTION_INTERVAL_MS);
 
   setInterval(() => {
+    if (isJstWeekendMarketClosed()) return;
     const hour = currentJstHour();
     if (hour < ANALYSIS_JST_START_HOUR || hour > ANALYSIS_JST_END_HOUR) return;
     runAnalysis("scheduled").catch((error) => {
