@@ -7,8 +7,10 @@ import type { UsdJpyRate } from "@/lib/types";
 export default function Home() {
   const [state, setState] = useState<RateCardProps>({ status: "loading" });
 
+  // Note: no setState call before the first `await` here — a synchronous
+  // setState in an effect's call chain trips react-hooks/set-state-in-effect.
+  // The initial "loading" state comes from useState's initial value instead.
   const fetchRate = useCallback(async () => {
-    setState({ status: "loading" });
     try {
       const res = await fetch("/api/rate/usd-jpy");
       if (!res.ok) {
@@ -29,8 +31,15 @@ export default function Home() {
     fetchRate();
   }, [fetchRate]);
 
+  // Resetting to "loading" happens here instead, since this only ever runs
+  // from the button's click handler, not from the effect above.
+  const handleRefresh = useCallback(() => {
+    setState({ status: "loading" });
+    fetchRate();
+  }, [fetchRate]);
+
   const cardProps: RateCardProps =
-    state.status === "loading" ? state : { ...state, onRefresh: fetchRate };
+    state.status === "loading" ? state : { ...state, onRefresh: handleRefresh };
 
   return (
     <main className="flex min-h-screen flex-1 items-center justify-center bg-black p-6">
