@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { fn } from "storybook/test";
 import { RateCard } from "./RateCard";
 
 const meta = {
@@ -29,18 +30,18 @@ export const Loading: Story = {
 
 export const LoadedPortrait: Story = {
   name: "Loaded (Portrait)",
-  args: { status: "loaded", rate: sampleRate },
+  args: { status: "loaded", rate: sampleRate, onRefresh: fn() },
   globals: { viewport: { value: "mobilePortrait" } },
 };
 
 export const LoadedLandscape: Story = {
   name: "Loaded (Landscape)",
-  args: { status: "loaded", rate: sampleRate },
+  args: { status: "loaded", rate: sampleRate, onRefresh: fn() },
   globals: { viewport: { value: "mobileLandscape" } },
 };
 
 export const ErrorState: Story = {
   name: "Error",
-  args: { status: "error", message: "Upstream rate API returned an error" },
+  args: { status: "error", message: "Upstream rate API returned an error", onRefresh: fn() },
   globals: { viewport: { value: "mobilePortrait" } },
 };
