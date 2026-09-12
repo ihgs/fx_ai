@@ -13,20 +13,21 @@
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 
-	// node_modules をコンテナエンジン管理のnamed volumeに置く。
+	// node_modules と .next をコンテナエンジン管理のnamed volumeに置く。
 	// ワークスペース本体はvirtiofs（実機ディスク→VM→コンテナ）越しのマウントで、
-	// node_modules のような大量の小ファイルへの同期アクセスがある処理（eslint等）が
-	// 顕著に遅くなるため、node_modules だけVMネイティブのストレージに逃がす。
+	// node_modules や .next/cache のような大量の小ファイルへの同期アクセスがある処理
+	// （eslint、next devのHMR等）が顕著に遅くなるため、VMネイティブのストレージに逃がす。
 	// コンテナ再作成のたびに volume は空になるので postCreateCommand で入れ直す。
 	"mounts": [
-		"source=fx_ai-node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume"
+		"source=fx_ai-node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume",
+		"source=fx_ai-next-cache,target=${containerWorkspaceFolder}/.next,type=volume"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "sudo chown -R $(id -u):$(id -g) node_modules && npm install"
+	"postCreateCommand": "sudo mkdir -p .next && sudo chown -R $(id -u):$(id -g) node_modules .next && npm install"
 
 	// Configure tool-specific properties.
 	// "customizations": {},
