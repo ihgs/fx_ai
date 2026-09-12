@@ -23,20 +23,24 @@ type UsdJpyRate = {
   bid: number;
   ask: number;
   timestamp: string; // 取得元APIのtimestamp
+  open: { price: number; date: string } | null; // 直近取引日の始値（date: "YYYY-MM-DD"）。取得できない場合は null
 };
 ```
 
 ## API Contract
 - `GET /api/rate/usd-jpy`
   - 200: `UsdJpyRate`
-  - 502: `{ error: string }`（上流API失敗時）
+  - 502: `{ error: string }`（上流API失敗時。ticker取得自体の失敗のみが対象）
+- 始値の取得: `GET https://forex-api.coin.z.com/public/v1/klines?symbol=USD_JPY&priceType=BID&interval=1day&date=<年>` を追加で叩き、返る日足配列の最後の要素（直近取引日）の `open` を使う。**ベストエフォート**: この呼び出しが失敗しても ticker 側が成功していれば 200 を返し、`open: null` とする（Req 1.5）。市場が休場中（週末等）は直近取引日の始値になり、暦日としての「本日」とは限らないため、UI側では取得した日付 (`date`) を併記して誤解を防ぐ。
 
 ## UI Components (Storybook)
-- `RateCard`: 以下の状態を story で再現する
+- `RateCard`: 以下の状態を story で再現する（Storybookの `parameters.layout` は `fullscreen` にし、実機同様に余白なしで幅いっぱいの見え方を確認できるようにする）
   - `loading`
-  - `loaded`（縦向きレイアウト）
-  - `loaded`（横向きレイアウト）
+  - `loaded`（縦向きレイアウト、始値あり）
+  - `loaded`（横向きレイアウト、始値あり）
   - `error`
+- 縦向きレイアウトはカードの最大幅を制限せず（`max-w`なし）画面幅いっぱいに広げる。文字サイズは全体的に大きめにする（メインのレート値は`text-6xl`相当）。
+- Storybookのビューポートプリセットは実機検証に合わせて iPhone SE 相当（縦 375×667 / 横 667×375）にする。
 
 ## Key Files
 - `package.json`, `tsconfig.json`, `next.config.js`, `tailwind.config.ts`, `postcss.config.js`, `app/globals.css`（Tailwind ディレクティブ）（scaffold）
@@ -47,6 +51,7 @@ type UsdJpyRate = {
 ## Error Handling / Edge Cases
 - 上流APIが `status != 0`（サンプルの `5` 等）を返した場合はエラー扱いにして 502 を返す。
 - クライアント側で fetch 失敗・非200レスポンスの場合はエラー状態を表示し、リトライ導線（更新ボタン）を出す。
+- 始値取得（klines）の失敗・空データはticker取得の成否に影響させない（`open: null`にするだけで502にはしない）。
 
 ## Testing Approach
 - `tsc --noEmit` / `next build`

@@ -17,18 +17,19 @@ const preview: Preview = {
       test: 'todo'
     },
 
-    // Mobile portrait/landscape presets so orientation-dependent layouts
-    // (Tailwind `portrait:` / `landscape:` variants) can be previewed accurately.
+    // iPhone SE-sized portrait/landscape presets so orientation-dependent
+    // layouts (Tailwind `portrait:` / `landscape:` variants) can be previewed
+    // at the actual device size used for review.
     viewport: {
       options: {
         mobilePortrait: {
-          name: 'Mobile Portrait',
-          styles: { width: '390px', height: '844px' },
+          name: 'Mobile Portrait (iPhone SE)',
+          styles: { width: '375px', height: '667px' },
           type: 'mobile',
         },
         mobileLandscape: {
-          name: 'Mobile Landscape',
-          styles: { width: '844px', height: '390px' },
+          name: 'Mobile Landscape (iPhone SE)',
+          styles: { width: '667px', height: '375px' },
           type: 'mobile',
         },
       },
