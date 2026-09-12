@@ -7,16 +7,25 @@
 	"features": {
 		"ghcr.io/devcontainers/features/python:1": {},
 		"ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
-	}
+	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
+
+	// node_modules をコンテナエンジン管理のnamed volumeに置く。
+	// ワークスペース本体はvirtiofs（実機ディスク→VM→コンテナ）越しのマウントで、
+	// node_modules のような大量の小ファイルへの同期アクセスがある処理（eslint等）が
+	// 顕著に遅くなるため、node_modules だけVMネイティブのストレージに逃がす。
+	// コンテナ再作成のたびに volume は空になるので postCreateCommand で入れ直す。
+	"mounts": [
+		"source=fx_ai-node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume"
+	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "yarn install",
+	"postCreateCommand": "npm install"
 
 	// Configure tool-specific properties.
 	// "customizations": {},
