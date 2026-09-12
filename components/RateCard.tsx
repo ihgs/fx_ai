@@ -2,8 +2,8 @@ import type { UsdJpyRate } from "@/lib/types";
 
 export type RateCardProps =
   | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "loaded"; rate: UsdJpyRate };
+  | { status: "error"; message: string; onRefresh?: () => void }
+  | { status: "loaded"; rate: UsdJpyRate; onRefresh?: () => void };
 
 function formatTimestamp(timestamp: string): string {
   const date = new Date(timestamp);
@@ -15,6 +15,18 @@ function formatDate(dateString: string): string {
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return dateString;
   return date.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" });
+}
+
+function RefreshButton({ onRefresh }: { onRefresh: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onRefresh}
+      className="mt-4 rounded-full bg-zinc-800 px-5 py-2 text-base font-medium text-white transition-colors hover:bg-zinc-700"
+    >
+      更新
+    </button>
+  );
 }
 
 export function RateCard(props: RateCardProps) {
@@ -38,6 +50,7 @@ export function RateCard(props: RateCardProps) {
             レートを取得できませんでした
           </p>
           <p className="mt-1 text-base text-zinc-400">{props.message}</p>
+          {props.onRefresh && <RefreshButton onRefresh={props.onRefresh} />}
         </div>
       )}
 
@@ -58,6 +71,7 @@ export function RateCard(props: RateCardProps) {
           <p className="mt-3 text-base text-zinc-500">
             取得時刻: {formatTimestamp(props.rate.timestamp)}
           </p>
+          {props.onRefresh && <RefreshButton onRefresh={props.onRefresh} />}
         </div>
       )}
     </div>
