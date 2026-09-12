@@ -75,7 +75,16 @@ export function RateChart(props: RateChartProps) {
                 labelFormatter={(label) => formatTick(String(label))}
                 formatter={(value) => [typeof value === "number" ? value.toFixed(3) : String(value), "Bid"]}
               />
-              <Line type="linear" dataKey="bid" stroke={LINE_COLOR} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+              <Line
+                type="linear"
+                dataKey="bid"
+                stroke={LINE_COLOR}
+                strokeWidth={2}
+                strokeLinecap="butt"
+                strokeLinejoin="miter"
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
