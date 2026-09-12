@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import { getRecentCandles, insertAnalysisResult, type AnalysisResult } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 const HISTORY_MINUTES = 120;
 const TARGET_HORIZON_MS = 60 * 60 * 1000; // 1時間（Design: target_at）
@@ -48,7 +49,7 @@ export async function runAnalysis(trigger: "manual" | "scheduled"): Promise<Anal
     throw new Error("AI分析の出力を解析できませんでした");
   }
 
-  return insertAnalysisResult({
+  const result = insertAnalysisResult({
     executedAt: executedAt.toISOString(),
     method: METHOD,
     direction: response.parsed_output.direction,
@@ -58,4 +59,8 @@ export async function runAnalysis(trigger: "manual" | "scheduled"): Promise<Anal
     inputTo: history[history.length - 1].timestamp,
     trigger,
   });
+
+  logger.info(`[runAnalysis] completed trigger=${trigger} method=${METHOD} direction=${result.direction}`);
+
+  return result;
 }

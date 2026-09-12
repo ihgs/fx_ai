@@ -39,17 +39,27 @@ export async function register() {
   const { initDb } = await import("@/lib/db");
   const { collectRate } = await import("@/lib/collectRate");
   const { runAnalysis } = await import("@/lib/analyzeRate");
+  const { logger } = await import("@/lib/logger");
 
   initDb();
   setInterval(() => {
-    if (isJstWeekendMarketClosed()) return;
+    if (isJstWeekendMarketClosed()) {
+      logger.info("[collectRate] skipped: weekend market closure");
+      return;
+    }
     collectRate();
   }, COLLECTION_INTERVAL_MS);
 
   setInterval(() => {
-    if (isJstWeekendMarketClosed()) return;
+    if (isJstWeekendMarketClosed()) {
+      logger.info("[runAnalysis] skipped: weekend market closure");
+      return;
+    }
     const hour = currentJstHour();
-    if (hour < ANALYSIS_JST_START_HOUR || hour > ANALYSIS_JST_END_HOUR) return;
+    if (hour < ANALYSIS_JST_START_HOUR || hour > ANALYSIS_JST_END_HOUR) {
+      logger.info(`[runAnalysis] skipped: outside scheduled hours (JST ${hour}時)`);
+      return;
+    }
     runAnalysis("scheduled").catch((error) => {
       console.error("[runAnalysis] scheduled analysis failed:", error);
     });

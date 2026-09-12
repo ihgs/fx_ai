@@ -1,5 +1,6 @@
 import { fetchTicker } from "@/lib/fetchTicker";
 import { insertCandle, SYMBOL, INTERVAL } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 const BUCKET_MS = 60_000; // 1分（Design: 収集間隔）
 
@@ -15,16 +16,20 @@ function currentBucketStart(): string {
 export async function collectRate(): Promise<void> {
   try {
     const ticker = await fetchTicker();
+    const bucketStart = currentBucketStart();
     insertCandle({
       symbol: SYMBOL,
       interval: INTERVAL,
-      bucketStart: currentBucketStart(),
+      bucketStart,
       open: ticker.bid,
       high: ticker.bid,
       low: ticker.bid,
       close: ticker.bid,
       ask: ticker.ask,
       source: "live",
+    });
+    logger.info(`[collectRate] collected ${SYMBOL} bid=${ticker.bid} ask=${ticker.ask}`, {
+      bucketStart,
     });
   } catch (error) {
     console.error("[collectRate] failed to collect USD/JPY rate:", error);
