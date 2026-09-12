@@ -15,6 +15,7 @@
 - `app/page.tsx` — Client Component。現在レート表示画面（今回は1画面のみ。spec 003 でスワイプ導線に組み込む前提の作り）。
 - `app/api/rate/usd-jpy/route.ts` — `sample/route.ts` のパターンを踏襲した Route Handler（外部API `forex-api.coin.z.com` を叩く）。
 - `components/RateCard.tsx` — レート表示のプレゼンテーション用コンポーネント。ローディング/エラー/成功の状態、縦向き/横向きのレイアウトを Tailwind の `portrait:` / `landscape:` バリアントで出し分ける（JSでの向き判定は行わずCSSのみで切り替える）。
+- 配色は常時ダークテーマ固定（OSの`prefers-color-scheme`には追従しない）: ページ背景は黒 (`bg-black`)、カードは濃いグレー (`bg-zinc-900`) に白系の文字。以降のspec（チャート・分析画面など）もこの配色を踏襲する。
 
 ## Data Model / Types
 ```ts
