@@ -1,6 +1,6 @@
 # 現在レート表示 — Tasks
 
-- [ ] 1. Next.js アプリの初期セットアップ（Next.js 16.x, TypeScript, Tailwind CSS 4.x で `create-next-app`）（Design: Tech Stack Versions, Architecture）
+- [x] 1. Next.js アプリの初期セットアップ（Next.js 16.x, TypeScript, Tailwind CSS 4.x で `create-next-app`）（Design: Tech Stack Versions, Architecture）
 - [ ] 2. Storybook のセットアップ（Storybook 10.x, フレームワークは `@storybook/nextjs-vite`）（Design: Tech Stack Versions）
 - [ ] 3. `GET /api/rate/usd-jpy` Route Handler を実装する（Req: 1.1, 1.2 / Design: API Contract, Error Handling）
 - [ ] 4. `RateCard` コンポーネントを実装し、`loading` / `loaded`（縦向き） / `loaded`（横向き） / `error` の4状態の story を作成する（Req: 1.1, 1.3, 1.4, 2.1, 2.2, 2.3 / Design: UI Components, Architecture）
