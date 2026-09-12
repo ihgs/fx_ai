@@ -25,6 +25,9 @@ sample
 # production
 /build
 
+# sqlite db (spec 002)
+/data
+
 # misc
 .DS_Store
 *.pem
