@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { runMigrations } from "@/lib/migrate";
+import { runMigrations } from "./migrate.ts";
 
 export const SYMBOL = "USD_JPY";
 export const INTERVAL = "1min";
