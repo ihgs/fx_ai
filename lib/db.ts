@@ -28,9 +28,11 @@ export type RateHistoryPoint = {
 export type AnalysisResult = {
   id: number;
   executedAt: string;
+  method: string;
   direction: "up" | "down" | "flat";
   rationale: string;
   targetAt: string;
+  inputTo: string;
   trigger: "manual" | "scheduled";
 };
 
@@ -141,9 +143,11 @@ export function insertAnalysisResult(input: NewAnalysisResult): AnalysisResult {
   return {
     id: Number(info.lastInsertRowid),
     executedAt: input.executedAt,
+    method: input.method,
     direction: input.direction,
     rationale: input.rationale,
     targetAt: input.targetAt,
+    inputTo: input.inputTo,
     trigger: input.trigger,
   };
 }
@@ -151,10 +155,25 @@ export function insertAnalysisResult(input: NewAnalysisResult): AnalysisResult {
 export function getAnalysisResults(limit: number): AnalysisResult[] {
   return getDb()
     .prepare(
-      `SELECT id, executed_at as executedAt, direction, rationale, target_at as targetAt, trigger
+      `SELECT id, executed_at as executedAt, method, direction, rationale,
+              target_at as targetAt, input_to as inputTo, trigger
        FROM analysis_results
        ORDER BY executed_at DESC
        LIMIT ?`,
     )
     .all(limit) as unknown as AnalysisResult[];
+}
+
+/** 答え合わせ用: 指定時刻以降で最初に存在するローソク足（無ければnull）。 */
+export function getCandleAtOrAfter(timestamp: string): RateHistoryPoint | null {
+  const row = getDb()
+    .prepare(
+      `SELECT bucket_start as timestamp, close as bid
+       FROM rate_candles
+       WHERE symbol = ? AND interval = ? AND bucket_start >= ?
+       ORDER BY bucket_start ASC
+       LIMIT 1`,
+    )
+    .get(SYMBOL, INTERVAL, timestamp) as RateHistoryPoint | undefined;
+  return row ?? null;
 }

@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnalysisResults, type AnalysisResultsProps, type AnalysisResultItem } from "@/components/AnalysisResults";
+import {
+  AnalysisResults,
+  type AccuracyStat,
+  type AnalysisResultsProps,
+  type AnalysisResultItem,
+} from "@/components/AnalysisResults";
 
 type ListState = AnalysisResultsProps["listState"];
 
@@ -9,8 +14,8 @@ async function loadResults(): Promise<ListState> {
   try {
     const res = await fetch("/api/analysis");
     if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
-    const body = (await res.json()) as { results: AnalysisResultItem[] };
-    return { status: "loaded", results: body.results };
+    const body = (await res.json()) as { results: AnalysisResultItem[]; accuracy: AccuracyStat[] };
+    return { status: "loaded", results: body.results, accuracy: body.accuracy };
   } catch (error) {
     return { status: "error", message: error instanceof Error ? error.message : "Unknown error" };
   }
@@ -37,15 +42,16 @@ export function AnalysisScreen() {
     setRunError(null);
     try {
       const res = await fetch("/api/analysis", { method: "POST" });
-      const body = (await res.json()) as { result?: AnalysisResultItem; error?: string };
+      const body = (await res.json()) as { result?: Omit<AnalysisResultItem, "outcome">; error?: string };
       if (!res.ok || !body.result) {
         throw new Error(body.error ?? `Request failed with status ${res.status}`);
       }
-      const newResult = body.result;
+      // 実行直後は答え合わせの対象時刻がまだ来ていないため、必ず判定待ちになる。
+      const newResult: AnalysisResultItem = { ...body.result, outcome: "pending" };
       setListState((prev) =>
         prev.status === "loaded"
-          ? { status: "loaded", results: [newResult, ...prev.results] }
-          : { status: "loaded", results: [newResult] },
+          ? { status: "loaded", results: [newResult, ...prev.results], accuracy: prev.accuracy }
+          : { status: "loaded", results: [newResult], accuracy: [] },
       );
     } catch (error) {
       setRunError(error instanceof Error ? error.message : "Unknown error");
