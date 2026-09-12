@@ -1,17 +1,29 @@
+export type AnalysisOutcome = "correct" | "incorrect" | "pending";
+
+export type AccuracyStat = {
+  method: string;
+  correct: number;
+  incorrect: number;
+  pending: number;
+  accuracyRate: number | null;
+};
+
 export type AnalysisResultItem = {
   id: number;
   executedAt: string;
+  method: string;
   direction: "up" | "down" | "flat";
   rationale: string;
   targetAt: string;
   trigger: "manual" | "scheduled";
+  outcome: AnalysisOutcome;
 };
 
 export type AnalysisResultsProps = {
   listState:
     | { status: "loading" }
     | { status: "error"; message: string }
-    | { status: "loaded"; results: AnalysisResultItem[] };
+    | { status: "loaded"; results: AnalysisResultItem[]; accuracy: AccuracyStat[] };
   isRunning: boolean;
   runError: string | null;
   onRunAnalysis: () => void;
@@ -22,6 +34,22 @@ const DIRECTION_LABEL: Record<AnalysisResultItem["direction"], string> = {
   down: "下落 ↓",
   flat: "横ばい →",
 };
+
+const OUTCOME_LABEL: Record<AnalysisOutcome, string> = {
+  correct: "正解",
+  incorrect: "不正解",
+  pending: "判定待ち",
+};
+
+const OUTCOME_CLASS: Record<AnalysisOutcome, string> = {
+  correct: "bg-emerald-500/15 text-emerald-400",
+  incorrect: "bg-red-500/15 text-red-400",
+  pending: "bg-zinc-700/50 text-zinc-400",
+};
+
+function formatAccuracyRate(rate: number | null): string {
+  return rate === null ? "―" : `${Math.round(rate * 100)}%`;
+}
 
 function formatDateTime(iso: string): string {
   const date = new Date(iso);
@@ -56,6 +84,20 @@ export function AnalysisResults({ listState, isRunning, runError, onRunAnalysis 
 
       {listState.status === "loaded" && (
         <div className="flex w-full max-w-md flex-col items-center gap-4">
+          {listState.accuracy.length > 0 && (
+            <ul className="flex w-full flex-col gap-2 rounded-2xl bg-zinc-900 p-4 ring-1 ring-white/10">
+              {listState.accuracy.map((stat) => (
+                <li key={stat.method} className="flex items-center justify-between text-sm">
+                  <span className="text-zinc-400">
+                    正答率（{stat.method}）
+                    <span className="ml-2 text-xs text-zinc-500">判定待ち{stat.pending}件</span>
+                  </span>
+                  <span className="font-medium text-white">{formatAccuracyRate(stat.accuracyRate)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
           <button
             type="button"
             onClick={onRunAnalysis}
@@ -81,11 +123,19 @@ export function AnalysisResults({ listState, isRunning, runError, onRunAnalysis 
                   className="rounded-2xl bg-zinc-900 p-4 text-left shadow-sm ring-1 ring-white/10"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-medium text-white">
-                      {DIRECTION_LABEL[result.direction]}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-medium text-white">
+                        {DIRECTION_LABEL[result.direction]}
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${OUTCOME_CLASS[result.outcome]}`}
+                      >
+                        {OUTCOME_LABEL[result.outcome]}
+                      </span>
+                    </div>
                     <span className="text-xs text-zinc-500">{formatDateTime(result.executedAt)}</span>
                   </div>
+                  <p className="mt-1 text-xs text-zinc-500">判定対象: {formatDateTime(result.targetAt)}</p>
                   <p className="mt-2 text-sm text-zinc-400">{result.rationale}</p>
                 </li>
               ))}
