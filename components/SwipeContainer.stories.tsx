@@ -21,13 +21,13 @@ function DummySlide({ color, label }: { color: string; label: string }) {
 
 export const ThreeSlides: Story = {
   args: {
-    children: (
-      <>
-        <DummySlide color="bg-red-900" label="1" />
-        <DummySlide color="bg-green-900" label="2" />
-        <DummySlide color="bg-blue-900" label="3" />
-      </>
-    ),
+    // Fragment (<>...</>) だと SwipeContainer 内の Children.toArray() が
+    // 中身まで展開せず「1個の子」として数えてしまうため、配列で渡す。
+    children: [
+      <DummySlide key="1" color="bg-red-900" label="1" />,
+      <DummySlide key="2" color="bg-green-900" label="2" />,
+      <DummySlide key="3" color="bg-blue-900" label="3" />,
+    ],
   },
   globals: { viewport: { value: "mobilePortrait" } },
 };
