@@ -40,11 +40,11 @@ type UsdJpyRate = {
   - `loaded`（縦向きレイアウト、始値あり）
   - `loaded`（横向きレイアウト、始値あり）
   - `error`
-- 縦向きレイアウトはカードの最大幅を制限せず（`max-w`なし）画面幅いっぱいに広げる。文字サイズは全体的に大きめにする（メインのレート値は`text-6xl`相当）。
+- 縦向きレイアウトはカードの最大幅を制限せず（`max-w`なし）画面幅いっぱいに広げる。文字サイズは全体的に大きめにする（メインのレート値は`text-7xl`相当）。
 - Storybookのビューポートプリセットは実機検証に合わせて iPhone SE 相当（縦 375×667 / 横 667×375）にする。
 
 ## Key Files
-- `package.json`, `tsconfig.json`, `next.config.js`, `tailwind.config.ts`, `postcss.config.js`, `app/globals.css`（Tailwind ディレクティブ）（scaffold）
+- `package.json`, `tsconfig.json`, `next.config.ts`, `postcss.config.mjs`, `app/globals.css`（Tailwind v4のCSSベース設定。`@theme`ディレクティブで完結するため`tailwind.config.*`は不要）（scaffold）
 - `app/layout.tsx`, `app/page.tsx`
 - `app/api/rate/usd-jpy/route.ts`
 - `components/RateCard.tsx`, `components/RateCard.stories.tsx`
