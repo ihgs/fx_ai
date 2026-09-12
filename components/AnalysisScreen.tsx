@@ -10,6 +10,16 @@ import {
 
 type ListState = AnalysisResultsProps["listState"];
 
+function withPendingIncremented(accuracy: AccuracyStat[], method: string): AccuracyStat[] {
+  const existing = accuracy.find((stat) => stat.method === method);
+  if (!existing) {
+    return [...accuracy, { method, correct: 0, incorrect: 0, pending: 1, accuracyRate: null }];
+  }
+  return accuracy.map((stat) =>
+    stat.method === method ? { ...stat, pending: stat.pending + 1 } : stat,
+  );
+}
+
 async function loadResults(): Promise<ListState> {
   try {
     const res = await fetch("/api/analysis");
@@ -50,8 +60,16 @@ export function AnalysisScreen() {
       const newResult: AnalysisResultItem = { ...body.result, outcome: "pending" };
       setListState((prev) =>
         prev.status === "loaded"
-          ? { status: "loaded", results: [newResult, ...prev.results], accuracy: prev.accuracy }
-          : { status: "loaded", results: [newResult], accuracy: [] },
+          ? {
+              status: "loaded",
+              results: [newResult, ...prev.results],
+              accuracy: withPendingIncremented(prev.accuracy, newResult.method),
+            }
+          : {
+              status: "loaded",
+              results: [newResult],
+              accuracy: withPendingIncremented([], newResult.method),
+            },
       );
     } catch (error) {
       setRunError(error instanceof Error ? error.message : "Unknown error");
