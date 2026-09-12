@@ -23,9 +23,11 @@ description: Implement tasks from an existing spec (specs/<slug>/tasks.md) for t
 - `design.md` の決定（アーキテクチャ、API contract、ファイル配置）に従う。
 - 既存コードの実際の書き方（`package.json` の依存、既存の Route Handler や Component の書き方、lint/format 設定）を確認し、それに合わせる。設計に書かれていない細部は既存の慣習を優先する。
 - 差分はそのタスクの範囲に留める（他タスクの先取り実装やついでのリファクタはしない）。
+- **UI コンポーネントを実装/変更するタスクの場合**、design.md の `UI Components (Storybook)` セクションに挙げた状態を再現する `*.stories.tsx` を同じタスク内で作成・更新する（後回しにしない）。Storybook 未セットアップのタスクが先にある場合はそれを先に完了させる。
 
 ### 3. 検証
 - `package.json` の `scripts` を確認し、該当する範囲で lint / typecheck / build を実行する（例: `npm run lint`, `npx tsc --noEmit`, `npm run build`）。テスト基盤があれば関連テストも実行する。
+- UI コンポーネントを含むタスクでは、追加で Storybook のビルドが通ることを確認する（`npm run build-storybook` など、`package.json` の scripts に合わせる）。実際の見た目を目視確認したい場合は `ui-check` スキルを使う。
 - 検証が通らないタスクはチェックを付けない。
 
 ### 4. 完了処理

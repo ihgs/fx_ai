@@ -30,9 +30,11 @@ description: Start a new feature spec for this Next.js app — drafts requiremen
   - `## Architecture`: どこに何を置くか（例: `app/api/.../route.ts` の Route Handler、Server/Client Component の分担）。
   - `## Data Model / Types`: 必要な型・スキーマ。
   - `## API Contract`: エンドポイント、リクエスト/レスポンス形状（既存の `sample/route.ts` のような fetch → NextResponse.json パターンがあれば踏襲）。
+  - `## UI Components (Storybook)`: 画面表示を伴う機能の場合のみ記載。追加/変更する UI コンポーネントごとに、Story として再現すべき状態（Props/データのバリエーション、ローディング・エラー・空状態など）を列挙する。API-only の機能はこのセクションごと省略してよい。
   - `## Key Files`: 追加・変更するファイルの一覧。
   - `## Error Handling / Edge Cases`
-  - `## Testing Approach`: 何をどう検証するか（プロジェクトに既存のテスト基盤があればそれに合わせる、無ければ最低限 `tsc --noEmit` / `next build` レベル）。
+  - `## Testing Approach`: 何をどう検証するか（プロジェクトに既存のテスト基盤があればそれに合わせる、無ければ最低限 `tsc --noEmit` / `next build` レベル）。UI コンポーネントを含む場合は「Storybook story で状態を再現し `ui-check` で目視確認する」ことをここに明記する。
+- プロジェクトに Storybook が未導入（`.storybook/` が無い）かつ `UI Components` セクションがある場合、その旨をユーザーに伝え、`tasks.md` の最初のタスクとして Storybook セットアップを入れる前提で進める。
 - 要約を提示し、承認を待つ。**ここで止まる。**
 
 ### 3. tasks.md を作成（design 承認後）
@@ -41,6 +43,8 @@ description: Start a new feature spec for this Next.js app — drafts requiremen
   - [ ] 1. <やること>（Req: 1.1, 1.2 / Design: API Contract）
   ```
 - タスクは縦切り（1タスク=1コミット相当で動作確認できる単位）にし、依存順に並べる。
+- UI コンポーネントを追加/変更するタスクには、対応する `*.stories.tsx` の作成・更新も同タスクに含める（story を後回しにしない）。
+- Storybook が未導入で `UI Components` セクションがある場合、`- [ ] 0. Storybook をセットアップする（npx storybook@latest init）` を最初のタスクとして入れる。
 - 完了したら作成した3ファイルのパスを提示し、次は `/spec-implement <slug>` で実装を進める旨を伝える。
 
 ## 注意

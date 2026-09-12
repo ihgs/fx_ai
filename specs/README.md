@@ -12,8 +12,9 @@ specs/
 
 ## ワークフロー
 
-1. `/spec-new <機能名>` — requirements → design → tasks を順に作成（各フェーズ後に承認待ち）
-2. `/spec-implement <slug>` — tasks.md を上から順に実装・検証・チェックオフ
-3. `/spec-review <slug>` — requirements.md の受け入れ基準に対する実装の適合を読み取り専用でレビュー
+1. `/spec-new <機能名>` — requirements → design → tasks を順に作成（各フェーズ後に承認待ち）。UIを伴う機能は design.md に `UI Components (Storybook)` セクションで再現すべき状態を列挙する。
+2. `/spec-implement <slug>` — tasks.md を上から順に実装・検証・チェックオフ。UIコンポーネントのタスクは同時に `*.stories.tsx` を作成/更新する。
+3. `/ui-check <slug>` — Storybook を起動し、design.md に列挙した状態を目視確認する（読み取り専用）。UIを伴う機能の実装後、レビュー前に実施。
+4. `/spec-review <slug>` — requirements.md の受け入れ基準に対する実装の適合を読み取り専用でレビュー
 
-詳細は `.claude/skills/spec-new/`, `.claude/skills/spec-implement/`, `.claude/skills/spec-review/` の各 `SKILL.md` を参照。
+詳細は `.claude/skills/spec-new/`, `.claude/skills/spec-implement/`, `.claude/skills/ui-check/`, `.claude/skills/spec-review/` の各 `SKILL.md` を参照。
