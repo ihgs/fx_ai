@@ -28,7 +28,7 @@ async function loadHistory(range: Range): Promise<RateChartProps> {
   }
 }
 
-export default function ChartPage() {
+export function ChartScreen() {
   const [range, setRange] = useState<Range>("1d");
   const [chartProps, setChartProps] = useState<RateChartProps>({ status: "loading" });
 
@@ -50,7 +50,7 @@ export default function ChartPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-1 flex-col items-center gap-6 bg-black p-6">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-6 p-6">
       <div className="flex gap-2">
         {RANGES.map((r) => (
           <button
@@ -66,6 +66,6 @@ export default function ChartPage() {
         ))}
       </div>
       <RateChart {...chartProps} />
-    </main>
+    </div>
   );
 }
