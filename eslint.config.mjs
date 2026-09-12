@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Reference-only scripts, not part of the app (see .gitignore).
     "sample/**",
+    // Built Storybook output; huge generated bundles, not source (see .gitignore).
+    "storybook-static/**",
   ]),
   ...storybook.configs["flat/recommended"]
 ]);
