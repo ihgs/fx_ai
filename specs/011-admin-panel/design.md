@@ -138,7 +138,7 @@ type AdminHistoryTableProps = {
   onNextWeek: () => void;
 };
 ```
-Stories: `Loading` / `Error` / `Loaded`（一部セルが欠測のサンプル）/ `SparseData`（大半が欠測）/ `AtLatestWeek`（次週ボタンdisabled）。
+Stories: `Loading` / `LoadError`（グローバルの`Error`とのシャドーイングを避けるため`Error`から改名）/ `Loaded`（一部セルが欠測のサンプル）/ `SparseData`（大半が欠測）/ `AtLatestWeek`（次週ボタンdisabled）。
 
 いずれもPC幅（`layout: "fullscreen"`、viewportはデフォルトのデスクトップサイズ。既存のモバイル向け`mobilePortrait`指定は使わない）。
 
