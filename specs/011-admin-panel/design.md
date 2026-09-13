@@ -2,11 +2,12 @@
 
 ## Architecture
 
-既存の `AnalysisResults`/`AnalysisScreen`（presentational + client container）の分離パターンを踏襲する。ナビゲーションやレイアウト共有は不要（Out of Scope）だが、PC幅のテーブル表示に合わせて `app/admin/` 配下に専用レイアウトを1つ置く。
+既存の `AnalysisResults`/`AnalysisScreen`（presentational + client container）の分離パターンを踏襲する。アプリ本体からのナビゲーションは無し（Out of Scope）だが、`/admin`配下の各機能間はトップページ（`app/admin/page.tsx`）からのリンクで遷移できるようにする。PC幅のテーブル表示に合わせて `app/admin/` 配下に専用レイアウトを1つ置く。
 
 ```
 app/admin/
   layout.tsx              # PC向け余白・最大幅（既存画面のmax-w-mdは使わない）
+  page.tsx                 # トップページ（Server Component、他機能へのリンク一覧）
   analysis/page.tsx        # Server Component shell → <AdminAnalysisScreen />
   history/page.tsx         # Server Component shell → <AdminHistoryScreen />
 
@@ -144,7 +145,7 @@ Stories: `Loading` / `LoadError`（グローバルの`Error`とのシャドー�
 
 ## Key Files
 
-- 追加: `app/admin/layout.tsx`, `app/admin/analysis/page.tsx`, `app/admin/history/page.tsx`
+- 追加: `app/admin/layout.tsx`, `app/admin/page.tsx`, `app/admin/analysis/page.tsx`, `app/admin/history/page.tsx`
 - 追加: `app/api/admin/analysis/route.ts`, `app/api/admin/analysis/[id]/route.ts`, `app/api/admin/history/route.ts`
 - 追加: `components/AdminAnalysisList.tsx`, `components/AdminAnalysisList.stories.tsx`, `components/AdminAnalysisScreen.tsx`
 - 追加: `components/AdminHistoryTable.tsx`, `components/AdminHistoryTable.stories.tsx`, `components/AdminHistoryScreen.tsx`
