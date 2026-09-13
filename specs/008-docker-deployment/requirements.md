@@ -31,10 +31,10 @@ recreated or redeployed.
       （コード変更不要、Dockerfile側で妨げないことを確認する）
 
 ### 3. シークレットを実行時に注入する
-As an operator, I want to pass secrets like `ANTHROPIC_API_KEY` as runtime environment
+As an operator, I want to pass secrets like `GEMINI_API_KEY` as runtime environment
 variables, So that credentials are never baked into the built image.
 
-- 3.1 THE SYSTEM SHALL `ANTHROPIC_API_KEY` 等の秘密情報をビルド引数(ARG)ではなく、
+- 3.1 THE SYSTEM SHALL `GEMINI_API_KEY` 等の秘密情報をビルド引数(ARG)ではなく、
       コンテナ起動時の環境変数(`docker run -e` 等)として受け取れるようにする
 - 3.2 IF `.env` 等の秘密情報を含みうるファイルが存在する THEN THE SYSTEM SHALL
       `.dockerignore` でビルドコンテキストから除外する

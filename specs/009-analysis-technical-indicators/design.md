@@ -69,4 +69,4 @@ type Indicators = {
   - 件数が15/60未満: 該当するSMAが`null`になること
   - 件数が1件: `changeRate=0`, `volatility=0`, 例外を投げないこと
 - `npx tsc --noEmit` / `npx eslint` で型・lintを確認する。
-- `ANTHROPIC_API_KEY`が利用可能であれば、実際に`runAnalysis("manual")`を実行してプロンプトに指標が含まれること・`method="v2"`で保存されることを手動確認する。難しい場合は`buildPrompt()`の出力文字列を確認するだけに留める。
+- `GEMINI_API_KEY`が利用可能であれば、実際に`runAnalysis("manual")`を実行してプロンプトに指標が含まれること・`method="v2"`で保存されることを手動確認する。難しい場合は`buildPrompt()`の出力文字列を確認するだけに留める。

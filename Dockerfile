@@ -26,7 +26,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/migrations ./migrations
 
 # data/ (SQLiteファイル) は再作成のたびに消えないよう volume をマウントして運用する。
-# 例: docker run -v fx_ai_data:/app/data -e ANTHROPIC_API_KEY=... -p 3000:3000 <image>
+# 例: docker run -v fx_ai_data:/app/data -e GEMINI_API_KEY=... -p 3000:3000 <image>
 # （scripts/docker-run.sh も参照）
 EXPOSE 3000
 CMD ["node", "server.js"]
