@@ -63,6 +63,23 @@ function formatSma(value: number | null): string {
   return value === null ? "算出不可（データ不足）" : value.toFixed(3);
 }
 
+const jstFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Tokyo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+/** UTC ISO文字列を「YYYY-MM-DD HH:mm JST」表記に変換する（AIが根拠説明でJSTを参照できるようにするため）。 */
+function toJstDisplay(isoTimestamp: string): string {
+  const parts = jstFormatter.formatToParts(new Date(isoTimestamp));
+  const get = (type: string) => parts.find((part) => part.type === type)?.value;
+  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")} JST`;
+}
+
 function tryParseJson(text: string): unknown {
   try {
     return JSON.parse(text);
@@ -78,8 +95,8 @@ function omitDollarSchema(schema: Record<string, unknown>): Record<string, unkno
 }
 
 function buildPrompt(history: RateHistoryPoint[], indicators: Indicators): string {
-  const lines = history.map((p) => `${p.timestamp}: ${p.bid.toFixed(3)}`).join("\n");
-  return `以下はUSD/JPYの直近${history.length}分間、1分足の終値（bid）の推移です。
+  const lines = history.map((p) => `${toJstDisplay(p.timestamp)}: ${p.bid.toFixed(3)}`).join("\n");
+  return `以下はUSD/JPYの直近${history.length}分間、1分足の終値（bid）の推移です（時刻は日本時間）。
 
 ${lines}
 

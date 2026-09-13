@@ -33,9 +33,9 @@ type Indicators = {
 ## Prompt Contract
 `buildPrompt(history, indicators)`（既存の`buildPrompt(history)`を拡張）:
 ```
-以下はUSD/JPYの直近{N}分間、1分足の終値（bid）の推移です。
+以下はUSD/JPYの直近{N}分間、1分足の終値（bid）の推移です（時刻は日本時間）。
 
-{timestamp}: {bid}
+{timestamp（JST表記）}: {bid}
 ...
 
 【テクニカル指標】
