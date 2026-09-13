@@ -50,8 +50,8 @@ export function ChartScreen() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-6 p-6">
-      <div className="flex gap-2">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-6 overflow-y-auto p-6 landscape:justify-start landscape:gap-3 landscape:py-3">
+      <div className="flex shrink-0 gap-2">
         {RANGES.map((r) => (
           <button
             key={r}
