@@ -6,7 +6,7 @@ spec 001〜003 のバージョン系列・依存構成をそのまま踏襲す�
 | 用途 | 選定 | 理由 |
 |---|---|---|
 | AI API | `@google/genai`（公式TypeScript SDK） | Gemini APIを使う（当初のAnthropic APIから切替）。`GEMINI_API_KEY`環境変数を`.env.local`に設定する必要がある。 |
-| モデル | `gemini-flash-latest` | 定期実行（1日16回）+ 手動実行があるためコストを抑える目的で軽量なflashエイリアスモデルを使う（分類寄りの軽いタスクのため）。将来別モデルにしたい場合は`lib/analyzeRate.ts`内の`MODEL`定数1箇所を変えるだけで済む。 |
+| モデル | `gemini-2.5-flash` | 定期実行（1日16回）+ 手動実行があるためコストを抑える目的で軽量なflashモデルを使う（分類寄りの軽いタスクのため）。`-latest`系の浮動エイリアスは混雑しやすいため特定バージョンに固定している。将来別モデルにしたい場合は`lib/analyzeRate.ts`内の`MODEL`定数1箇所を変えるだけで済む。 |
 | 構造化出力 | `client.models.generateContent()` + `responseJsonSchema`（Zodスキーマを`z.toJSONSchema()`でJSON Schema化して渡す） | 見通し（up/down/flat）と根拠をJSONで確実に受け取るため。 |
 
 ## Architecture

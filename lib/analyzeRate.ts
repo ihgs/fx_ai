@@ -15,7 +15,7 @@ const AnalysisOutputSchema = z.object({
 });
 const analysisOutputJsonSchema = omitDollarSchema(z.toJSONSchema(AnalysisOutputSchema));
 
-const MODEL = "gemini-flash-latest";
+const MODEL = "gemini-2.5-flash";
 
 const client = new GoogleGenAI({});
 
