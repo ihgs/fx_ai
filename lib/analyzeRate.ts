@@ -1,12 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import { getRecentCandles, insertAnalysisResult, type AnalysisResult } from "@/lib/db";
+import { getRecentCandles, insertAnalysisResult, type AnalysisResult, type RateHistoryPoint } from "@/lib/db";
 import { logger } from "@/lib/logger";
 
 const HISTORY_MINUTES = 120;
 const TARGET_HORIZON_MS = 60 * 60 * 1000; // 1時間（Design: target_at）
-const METHOD = "v1"; // spec 005で分析手法が複数になった場合に備えた識別子
+const SMA_SHORT_MINUTES = 15;
+const SMA_LONG_MINUTES = 60;
+const METHOD = "v2"; // spec 009でテクニカル指標を導入し v1 から変更（正答率統計を新旧で区別する）
 
 const AnalysisOutputSchema = z.object({
   direction: z.enum(["up", "down", "flat"]),
@@ -15,13 +17,64 @@ const AnalysisOutputSchema = z.object({
 
 const client = new Anthropic();
 
-function buildPrompt(history: { timestamp: string; bid: number }[]): string {
+export type Indicators = {
+  smaShort: number | null;
+  smaLong: number | null;
+  changeRate: number;
+  volatility: number;
+  high: number;
+  low: number;
+};
+
+function average(values: number[]): number {
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
+function sma(history: RateHistoryPoint[], windowMinutes: number): number | null {
+  if (history.length < windowMinutes) return null;
+  return average(history.slice(-windowMinutes).map((p) => p.bid));
+}
+
+function sampleStdDev(values: number[]): number {
+  if (values.length < 2) return 0;
+  const mean = average(values);
+  const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / (values.length - 1);
+  return Math.sqrt(variance);
+}
+
+export function computeIndicators(history: RateHistoryPoint[]): Indicators {
+  const bids = history.map((p) => p.bid);
+  const changeRate = ((bids[bids.length - 1] - bids[0]) / bids[0]) * 100;
+  const volatility = sampleStdDev(bids);
+
+  return {
+    smaShort: sma(history, SMA_SHORT_MINUTES),
+    smaLong: sma(history, SMA_LONG_MINUTES),
+    changeRate,
+    volatility,
+    high: Math.max(...bids),
+    low: Math.min(...bids),
+  };
+}
+
+function formatSma(value: number | null): string {
+  return value === null ? "算出不可（データ不足）" : value.toFixed(3);
+}
+
+function buildPrompt(history: RateHistoryPoint[], indicators: Indicators): string {
   const lines = history.map((p) => `${p.timestamp}: ${p.bid.toFixed(3)}`).join("\n");
   return `以下はUSD/JPYの直近${history.length}分間、1分足の終値（bid）の推移です。
 
 ${lines}
 
-この推移をもとに、今後1時間程度のUSD/JPYの見通しを up（上昇） / down（下落） / flat（横ばい） のいずれかで判定し、
+【テクニカル指標】
+- 短期移動平均（${SMA_SHORT_MINUTES}分）: ${formatSma(indicators.smaShort)}
+- 長期移動平均（${SMA_LONG_MINUTES}分）: ${formatSma(indicators.smaLong)}
+- 期間内変化率: ${indicators.changeRate.toFixed(3)}%
+- ボラティリティ（標準偏差）: ${indicators.volatility.toFixed(3)}
+- 期間内高値: ${indicators.high.toFixed(3)} / 安値: ${indicators.low.toFixed(3)}
+
+この推移とテクニカル指標をもとに、今後1時間程度のUSD/JPYの見通しを up（上昇） / down（下落） / flat（横ばい） のいずれかで判定し、
 その根拠を日本語で2〜3文程度で簡潔に説明してください。`;
 }
 
@@ -37,12 +90,13 @@ export async function runAnalysis(trigger: "manual" | "scheduled"): Promise<Anal
   }
 
   const executedAt = new Date();
+  const indicators = computeIndicators(history);
 
   const response = await client.messages.parse({
     model: "claude-opus-5",
     max_tokens: 1024,
     output_config: { effort: "low", format: zodOutputFormat(AnalysisOutputSchema) },
-    messages: [{ role: "user", content: buildPrompt(history) }],
+    messages: [{ role: "user", content: buildPrompt(history, indicators) }],
   });
 
   if (!response.parsed_output) {
