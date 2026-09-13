@@ -1,0 +1,3 @@
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return <div className="mx-auto min-h-screen w-full max-w-6xl px-8 py-8">{children}</div>;
+}
