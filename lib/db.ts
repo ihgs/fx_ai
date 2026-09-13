@@ -178,6 +178,42 @@ export function getAnalysisResults(limit: number): AnalysisResult[] {
     .all(limit) as unknown as AnalysisResult[];
 }
 
+/** 管理画面の一覧用: 指定件数分をオフセット付きで返す（新しい順）。 */
+export function getAnalysisResultsPage(offset: number, limit: number): AnalysisResult[] {
+  return getDb()
+    .prepare(
+      `SELECT id, executed_at as executedAt, method, direction, rationale,
+              target_at as targetAt, input_to as inputTo, trigger
+       FROM analysis_results
+       ORDER BY executed_at DESC
+       LIMIT ? OFFSET ?`,
+    )
+    .all(limit, offset) as unknown as AnalysisResult[];
+}
+
+export function countAnalysisResults(): number {
+  const row = getDb().prepare(`SELECT COUNT(*) as count FROM analysis_results`).get() as { count: number };
+  return row.count;
+}
+
+/** 指定idの分析結果を削除する。対象が存在しなかった場合はfalseを返す。 */
+export function deleteAnalysisResult(id: number): boolean {
+  const info = getDb().prepare(`DELETE FROM analysis_results WHERE id = ?`).run(id);
+  return Number(info.changes) > 0;
+}
+
+/** 週次表の集計用: [fromIso, toIso) の範囲の1分足を古い順で返す。 */
+export function getCandlesInRange(fromIso: string, toIso: string): RateHistoryPoint[] {
+  return getDb()
+    .prepare(
+      `SELECT bucket_start as timestamp, close as bid
+       FROM rate_candles
+       WHERE symbol = ? AND interval = ? AND bucket_start >= ? AND bucket_start < ?
+       ORDER BY bucket_start ASC`,
+    )
+    .all(SYMBOL, INTERVAL, fromIso, toIso) as unknown as RateHistoryPoint[];
+}
+
 /** 答え合わせ用: 指定時刻以降で最初に存在するローソク足（無ければnull）。 */
 export function getCandleAtOrAfter(timestamp: string): RateHistoryPoint | null {
   const row = getDb()
