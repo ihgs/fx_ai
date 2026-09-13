@@ -1,5 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { getRecentCandles, insertAnalysisResult, type AnalysisResult, type RateHistoryPoint } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -14,8 +13,11 @@ const AnalysisOutputSchema = z.object({
   direction: z.enum(["up", "down", "flat"]),
   rationale: z.string(),
 });
+const analysisOutputJsonSchema = omitDollarSchema(z.toJSONSchema(AnalysisOutputSchema));
 
-const client = new Anthropic();
+const MODEL = "gemini-flash-latest";
+
+const client = new GoogleGenAI({});
 
 export type Indicators = {
   smaShort: number | null;
@@ -61,6 +63,20 @@ function formatSma(value: number | null): string {
   return value === null ? "算出不可（データ不足）" : value.toFixed(3);
 }
 
+function tryParseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function omitDollarSchema(schema: Record<string, unknown>): Record<string, unknown> {
+  const { $schema, ...rest } = schema;
+  void $schema;
+  return rest;
+}
+
 function buildPrompt(history: RateHistoryPoint[], indicators: Indicators): string {
   const lines = history.map((p) => `${p.timestamp}: ${p.bid.toFixed(3)}`).join("\n");
   return `以下はUSD/JPYの直近${history.length}分間、1分足の終値（bid）の推移です。
@@ -80,7 +96,7 @@ ${lines}
 
 /**
  * 直近のレート履歴を入力にAI分析を実行し、結果をDBに保存する。
- * レート履歴が無い、Anthropic API呼び出し失敗、DB保存失敗のいずれの場合も例外を投げる。
+ * レート履歴が無い、AI API呼び出し失敗、DB保存失敗のいずれの場合も例外を投げる。
  * 呼び出し元（APIルート or スケジューラ）がそれぞれの文脈でエラーを処理する（Req 1.4）。
  */
 export async function runAnalysis(trigger: "manual" | "scheduled"): Promise<AnalysisResult> {
@@ -92,22 +108,25 @@ export async function runAnalysis(trigger: "manual" | "scheduled"): Promise<Anal
   const executedAt = new Date();
   const indicators = computeIndicators(history);
 
-  const response = await client.messages.parse({
-    model: "claude-opus-5",
-    max_tokens: 1024,
-    output_config: { effort: "low", format: zodOutputFormat(AnalysisOutputSchema) },
-    messages: [{ role: "user", content: buildPrompt(history, indicators) }],
+  const response = await client.models.generateContent({
+    model: MODEL,
+    contents: buildPrompt(history, indicators),
+    config: {
+      responseMimeType: "application/json",
+      responseJsonSchema: analysisOutputJsonSchema,
+    },
   });
 
-  if (!response.parsed_output) {
+  const parsed = response.text ? AnalysisOutputSchema.safeParse(tryParseJson(response.text)) : null;
+  if (!parsed || !parsed.success) {
     throw new Error("AI分析の出力を解析できませんでした");
   }
 
   const result = insertAnalysisResult({
     executedAt: executedAt.toISOString(),
     method: METHOD,
-    direction: response.parsed_output.direction,
-    rationale: response.parsed_output.rationale,
+    direction: parsed.data.direction,
+    rationale: parsed.data.rationale,
     targetAt: new Date(executedAt.getTime() + TARGET_HORIZON_MS).toISOString(),
     inputFrom: history[0].timestamp,
     inputTo: history[history.length - 1].timestamp,

@@ -30,7 +30,7 @@
   `docker run -v <volume>:/app/data ...` でホスト/named volumeをマウントする
   （`instrumentation.ts` の `initDb()` が起動時にマイグレーションを自動適用するため、
   空の `data/` からでもスキーマが作成される。コード変更不要、Req 2.2）。
-- シークレット（`ANTHROPIC_API_KEY` 等）はビルド引数(ARG)にはせず、`docker run -e ANTHROPIC_API_KEY=...`
+- シークレット（`GEMINI_API_KEY` 等）はビルド引数(ARG)にはせず、`docker run -e GEMINI_API_KEY=...`
   のように実行時環境変数として渡す前提とする（Dockerfileには `ARG`/`ENV` でのデフォルト値を書かない）。
 
 ## Data Model / Types
@@ -53,7 +53,7 @@
   `data/` が渡らず、この問題は発生しない。つまり `.dockerignore` の `data` 除外は
   Req 3.2（秘密情報対策）だけでなく、開発中のDBスナップショットが非決定的に
   イメージへ焼き込まれることを防ぐ役割も兼ねている。
-- 必須環境変数（`ANTHROPIC_API_KEY`）が未設定でも起動自体は成功する。AI分析実行時に
+- 必須環境変数（`GEMINI_API_KEY`）が未設定でも起動自体は成功する。AI分析実行時に
   既存のエラーハンドリング（`POST /api/analysis` が502を返す、または定期実行が
   `console.error` を出す）に従う（Dockerfile側での事前チェックはしない、Out of Scope）。
 - `data/` ボリュームが未マウントの場合、コンテナ再作成のたびにDBが消える
@@ -66,7 +66,7 @@
 ## Testing Approach
 - `npm run build` がローカルで成功し、`.next/standalone/server.js` が生成されることを確認する。
 - `docker build` でイメージが作成できることを確認する。
-- `docker run -p 3000:3000 -e ANTHROPIC_API_KEY=<key> -v fx_ai_data:/app/data <image>` で起動し:
+- `docker run -p 3000:3000 -e GEMINI_API_KEY=<key> -v fx_ai_data:/app/data <image>` で起動し:
   - `http://localhost:3000` の画面表示、`/api/rate/usd-jpy` 等の既存APIが動くことを確認する
   - spec 006 で追加される `[collectRate]` のinfoログがコンテナログに出続けること
     （＝ `instrumentation.ts` の定期処理がstandalone環境でも動作していること）を確認する
