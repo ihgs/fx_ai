@@ -30,28 +30,28 @@ function formatTick(timestamp: string): string {
 
 export function RateChart(props: RateChartProps) {
   return (
-    <div className="w-full rounded-2xl bg-zinc-900 p-6 shadow-sm ring-1 ring-white/10 landscape:mx-auto landscape:max-w-2xl">
+    <div className="w-full rounded-2xl bg-zinc-900 p-6 shadow-sm ring-1 ring-white/10 landscape:mx-auto landscape:max-w-2xl landscape:p-4">
       <p className="text-lg font-medium text-zinc-400">USD/JPY</p>
 
       {props.status === "loading" && (
         <div
           role="status"
           aria-live="polite"
-          className="mt-4 h-64 animate-pulse rounded bg-zinc-800 portrait:h-72 landscape:h-56"
+          className="mt-4 h-64 animate-pulse rounded bg-zinc-800 portrait:h-72 landscape:mt-2 landscape:h-44"
         />
       )}
 
       {props.status === "empty" && (
         <div
           role="status"
-          className="mt-4 flex h-64 items-center justify-center text-base text-zinc-500 portrait:h-72 landscape:h-56"
+          className="mt-4 flex h-64 items-center justify-center text-base text-zinc-500 portrait:h-72 landscape:mt-2 landscape:h-44"
         >
           この期間のデータがありません
         </div>
       )}
 
       {props.status === "data" && (
-        <div className="mt-4 h-64 portrait:h-72 landscape:h-56">
+        <div className="mt-4 h-64 portrait:h-72 landscape:mt-2 landscape:h-44">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={props.points} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
               <CartesianGrid stroke={GRID_COLOR} strokeDasharray="3 3" vertical={false} />
