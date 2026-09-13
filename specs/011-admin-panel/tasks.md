@@ -17,3 +17,5 @@
 - [x] 8. `components/AdminHistoryScreen.tsx`（"use client" コンテナ: 週データ取得・前週/次週切り替え）と `app/admin/history/page.tsx` を実装し、`/admin/history` を実際に開いて週次表の表示・週送りが動作することを確認する（Req: Story 3 / Design: Architecture）
 
 - [x] 9. `ui-check` で `AdminAnalysisList` / `AdminHistoryTable` の全storyを目視確認し、`npm run lint` / `tsc --noEmit` / `npm run build` を実行して問題がないことを確認する（Design: Testing Approach）
+
+- [x] 10. `app/admin/page.tsx`（トップページ、`/admin/analysis`・`/admin/history`へのリンク一覧）を実装し、`/admin`を実際に開いて各リンクで遷移できることを確認する（Req: 4.1, 4.2 / Design: Architecture）
