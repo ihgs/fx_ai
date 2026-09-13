@@ -78,13 +78,24 @@ export function initDb(): void {
   getDb();
 }
 
-/** 同一バケット（symbol/interval/bucketStart）への二重保存は主キー制約で無害化される（Req 1.3）。 */
+/**
+ * 同一バケット（symbol/interval/bucketStart）が既に存在する場合、通常は無害化（無視）されるが、
+ * backfill（確定値）からの保存はliveの値を上書きする（backfillの方が確定した正しい値のため）。
+ */
 export function insertCandle(candle: RateCandle): void {
   getDb()
     .prepare(
-      `INSERT OR IGNORE INTO rate_candles
+      `INSERT INTO rate_candles
          (symbol, interval, bucket_start, open, high, low, close, ask, source)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (symbol, interval, bucket_start) DO UPDATE SET
+         open = excluded.open,
+         high = excluded.high,
+         low = excluded.low,
+         close = excluded.close,
+         ask = excluded.ask,
+         source = excluded.source
+       WHERE excluded.source = 'backfill'`,
     )
     .run(
       candle.symbol,

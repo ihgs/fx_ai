@@ -4,11 +4,12 @@ export type TickerData = {
   bid: number;
   ask: number;
   timestamp: string;
+  status: string;
 };
 
 type TickerResponse = {
   status?: number;
-  data?: Array<{ symbol?: string; bid?: string; ask?: string; timestamp?: string }>;
+  data?: Array<{ symbol?: string; bid?: string; ask?: string; timestamp?: string; status?: string }>;
 };
 
 /**
@@ -29,7 +30,7 @@ export async function fetchTicker(): Promise<TickerData> {
   }
 
   const usdJpy = payload.data.find((item) => item.symbol === "USD_JPY");
-  if (!usdJpy || usdJpy.bid === undefined || usdJpy.ask === undefined || !usdJpy.timestamp) {
+  if (!usdJpy || usdJpy.bid === undefined || usdJpy.ask === undefined || !usdJpy.timestamp || !usdJpy.status) {
     throw new Error("USD_JPY rate not found in upstream response");
   }
 
@@ -37,5 +38,6 @@ export async function fetchTicker(): Promise<TickerData> {
     bid: Number(usdJpy.bid),
     ask: Number(usdJpy.ask),
     timestamp: usdJpy.timestamp,
+    status: usdJpy.status,
   };
 }
