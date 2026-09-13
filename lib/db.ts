@@ -65,7 +65,10 @@ function getDb(): DatabaseSync {
   if (db) return db;
 
   mkdirSync(dirname(DB_PATH), { recursive: true });
-  db = new DatabaseSync(DB_PATH);
+  db = new DatabaseSync(DB_PATH, { timeout: 5000 });
+  // WALモード: 別プロセス（backfillHistory.ts等）からの同時書き込みでも
+  // 即座に「database is locked」にならないようにする。
+  db.exec("PRAGMA journal_mode = WAL;");
   runMigrations(db);
   return db;
 }
