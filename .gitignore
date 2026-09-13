@@ -28,6 +28,9 @@ sample
 # sqlite db (spec 002)
 /data
 
+# scripts/docker-backup.sh の出力先
+/backups
+
 # misc
 .DS_Store
 *.pem
