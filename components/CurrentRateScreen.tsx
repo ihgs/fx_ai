@@ -28,16 +28,57 @@ async function loadRate(): Promise<RateCardProps> {
   }
 }
 
+const POLL_INTERVAL_MS = 60 * 1000;
+
+/** 自動ポーリングでは取得成功時のみ表示を差し替え、失敗時は直前の表示を維持する（Req 1.2）。 */
+export function nextStateAfterPoll(current: RateCardProps, polled: RateCardProps): RateCardProps {
+  return polled.status === "loaded" ? polled : current;
+}
+
 export function CurrentRateScreen() {
   const [state, setState] = useState<RateCardProps>({ status: "loading" });
 
   useEffect(() => {
     let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+
+    function poll() {
+      loadRate().then((result) => {
+        if (!cancelled) setState((current) => nextStateAfterPoll(current, result));
+      });
+    }
+
+    function startPolling() {
+      if (intervalId !== undefined) return;
+      intervalId = setInterval(poll, POLL_INTERVAL_MS);
+    }
+
+    function stopPolling() {
+      if (intervalId !== undefined) {
+        clearInterval(intervalId);
+        intervalId = undefined;
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        poll();
+        startPolling();
+      }
+    }
+
     loadRate().then((result) => {
       if (!cancelled) setState(result);
     });
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       cancelled = true;
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
