@@ -34,7 +34,7 @@ export function RateCard(props: RateCardProps) {
     <div
       className="w-full rounded-2xl bg-zinc-900 p-6 shadow-sm ring-1 ring-white/10
                  portrait:text-center
-                 landscape:mx-auto landscape:flex landscape:max-w-2xl landscape:items-center landscape:justify-between landscape:gap-6 landscape:text-left"
+                 landscape:flex landscape:min-w-0 landscape:flex-1 landscape:items-center landscape:justify-between landscape:gap-6 landscape:text-left"
     >
       {props.status === "loading" && (
         <div role="status" aria-live="polite" className="animate-pulse space-y-4 landscape:flex-1">
