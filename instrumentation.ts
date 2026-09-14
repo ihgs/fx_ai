@@ -1,18 +1,7 @@
 const COLLECTION_INTERVAL_MS = 60_000; // 1分（Design: 定期実行）
-const ANALYSIS_INTERVAL_MS = 60 * 60_000; // 1時間（Design: AI分析の定期実行）
-const ANALYSIS_JST_START_HOUR = 7;
-const ANALYSIS_JST_END_HOUR = 22;
+const ANALYSIS_INTERVAL_MS = 60 * 60_000; // 1時間（Design: AI分析の定期実行。市場が開いている間は終日実行する）
 // 為替市場の休場（土曜朝〜月曜朝）に合わせたスキップ境界時刻
 const WEEKEND_CLOSURE_BOUNDARY_HOUR = 7;
-
-function currentJstHour(): number {
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Tokyo",
-    hour: "numeric",
-    hourCycle: "h23",
-  });
-  return Number(formatter.format(new Date()));
-}
 
 function isJstWeekendMarketClosed(): boolean {
   const formatter = new Intl.DateTimeFormat("en-US", {
@@ -53,11 +42,6 @@ export async function register() {
   setInterval(() => {
     if (isJstWeekendMarketClosed()) {
       logger.info("[runAnalysis] skipped: weekend market closure");
-      return;
-    }
-    const hour = currentJstHour();
-    if (hour < ANALYSIS_JST_START_HOUR || hour > ANALYSIS_JST_END_HOUR) {
-      logger.info(`[runAnalysis] skipped: outside scheduled hours (JST ${hour}時)`);
       return;
     }
     runAnalysis("scheduled").catch((error) => {
