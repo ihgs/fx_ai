@@ -27,6 +27,8 @@ export type AnalysisResultsProps = {
   isRunning: boolean;
   runError: string | null;
   onRunAnalysis: () => void;
+  /** プル更新に失敗した場合のみセットされる。listState自体は直前の値を維持したまま表示する。 */
+  refreshError: string | null;
 };
 
 const DIRECTION_LABEL: Record<AnalysisResultItem["direction"], string> = {
@@ -63,10 +65,22 @@ function formatDateTime(iso: string): string {
   });
 }
 
-export function AnalysisResults({ listState, isRunning, runError, onRunAnalysis }: AnalysisResultsProps) {
+export function AnalysisResults({
+  listState,
+  isRunning,
+  runError,
+  onRunAnalysis,
+  refreshError,
+}: AnalysisResultsProps) {
   return (
-    <div className="flex h-full w-full flex-col items-center gap-4 overflow-y-auto p-6">
+    <div className="flex w-full flex-col items-center gap-4 p-6">
       <p className="text-lg font-medium text-zinc-400">分析</p>
+
+      {refreshError && (
+        <p role="alert" className="text-sm text-red-400">
+          {refreshError}
+        </p>
+      )}
 
       {listState.status === "loading" && (
         <div
