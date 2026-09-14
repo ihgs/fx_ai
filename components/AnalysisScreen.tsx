@@ -7,6 +7,7 @@ import {
   type AnalysisResultsProps,
   type AnalysisResultItem,
 } from "@/components/AnalysisResults";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 type ListState = AnalysisResultsProps["listState"];
 
@@ -35,6 +36,7 @@ export function AnalysisScreen() {
   const [listState, setListState] = useState<ListState>({ status: "loading" });
   const [isRunning, setIsRunning] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,12 +80,27 @@ export function AnalysisScreen() {
     }
   }
 
+  // プル更新のジェスチャーハンドラ（イベントリスナー）なので、setStateを直接呼んでよい。
+  // 例外は投げない（loadResults自体が内部でcatchする）。失敗時はlistStateを直前の値のまま維持する。
+  async function handlePullRefresh() {
+    const result = await loadResults();
+    if (result.status === "error") {
+      setRefreshError(result.message);
+      return;
+    }
+    setRefreshError(null);
+    setListState(result);
+  }
+
   return (
-    <AnalysisResults
-      listState={listState}
-      isRunning={isRunning}
-      runError={runError}
-      onRunAnalysis={handleRunAnalysis}
-    />
+    <PullToRefresh onRefresh={handlePullRefresh} disabled={isRunning}>
+      <AnalysisResults
+        listState={listState}
+        isRunning={isRunning}
+        runError={runError}
+        onRunAnalysis={handleRunAnalysis}
+        refreshError={refreshError}
+      />
+    </PullToRefresh>
   );
 }

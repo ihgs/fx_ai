@@ -7,6 +7,9 @@ const meta = {
   parameters: {
     layout: "fullscreen",
   },
+  args: {
+    refreshError: null,
+  },
 } satisfies Meta<typeof AnalysisResults>;
 
 export default meta;
@@ -129,6 +132,18 @@ export const RunError: Story = {
     isRunning: false,
     runError: "AI分析の呼び出しに失敗しました",
     onRunAnalysis: fn(),
+  },
+  globals: { viewport: { value: "mobilePortrait" } },
+};
+
+export const RefreshError: Story = {
+  name: "Refresh Error",
+  args: {
+    listState: { status: "loaded", results: sampleResults, accuracy: singleMethodAccuracy },
+    isRunning: false,
+    runError: null,
+    onRunAnalysis: fn(),
+    refreshError: "更新に失敗しました",
   },
   globals: { viewport: { value: "mobilePortrait" } },
 };
