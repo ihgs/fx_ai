@@ -17,6 +17,10 @@ export type AnalysisResultItem = {
   targetAt: string;
   trigger: "manual" | "scheduled";
   outcome: AnalysisOutcome;
+  /** 分析時点（executedAt頃）の実レート。判定待ちでDBにまだ無ければnull。 */
+  baselineBid: number | null;
+  /** 判定対象時刻（targetAt）以降の実レート。判定待ちでDBにまだ無ければnull。 */
+  actualBid: number | null;
 };
 
 export type AnalysisResultsProps = {
@@ -51,6 +55,10 @@ const OUTCOME_CLASS: Record<AnalysisOutcome, string> = {
 
 function formatAccuracyRate(rate: number | null): string {
   return rate === null ? "―" : `${Math.round(rate * 100)}%`;
+}
+
+function formatBid(bid: number | null): string {
+  return bid === null ? "―" : bid.toFixed(3);
 }
 
 function formatDateTime(iso: string): string {
@@ -150,6 +158,9 @@ export function AnalysisResults({
                     <span className="text-xs text-zinc-500">{formatDateTime(result.executedAt)}</span>
                   </div>
                   <p className="mt-1 text-xs text-zinc-500">判定対象: {formatDateTime(result.targetAt)}</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    分析時 {formatBid(result.baselineBid)} → 結果 {formatBid(result.actualBid)}
+                  </p>
                   <p className="mt-2 text-sm text-zinc-400">{result.rationale}</p>
                 </li>
               ))}

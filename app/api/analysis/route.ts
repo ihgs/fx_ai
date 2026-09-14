@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { getAnalysisResults } from "@/lib/db";
 import { runAnalysis } from "@/lib/analyzeRate";
-import { buildAccuracyStats, judgeOutcome } from "@/lib/judgeAnalysis";
+import { buildAccuracyStats, judgeOutcomeDetailed } from "@/lib/judgeAnalysis";
 
 const LIST_LIMIT = 20;
 
 export async function GET() {
   const results = getAnalysisResults(LIST_LIMIT).map((result) => ({
     ...result,
-    outcome: judgeOutcome(result),
+    ...judgeOutcomeDetailed(result),
   }));
   const accuracy = buildAccuracyStats(results);
 

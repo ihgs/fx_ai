@@ -18,17 +18,36 @@ function classifyMovement(diff: number): "up" | "down" | "flat" {
   return "flat";
 }
 
+export type JudgedOutcome = {
+  outcome: AnalysisOutcome;
+  /** 分析時点（inputTo）のレート。DBにまだ無ければnull。 */
+  baselineBid: number | null;
+  /** 判定対象時刻（targetAt）以降の実レート。DBにまだ無ければnull。 */
+  actualBid: number | null;
+};
+
 /**
  * 分析実行時点（inputTo）と対象時刻（targetAt）以降の実レートを比較し、予測の正解/不正解/判定待ちを判定する。
  * どちらかの時点のレートがまだDBに無い場合は判定待ちとする（Req 1.2）。
+ * 判定に使った実レート（baselineBid/actualBid）も併せて返す（分析結果画面での表示用）。
  */
-export function judgeOutcome(result: AnalysisResult): AnalysisOutcome {
+export function judgeOutcomeDetailed(result: AnalysisResult): JudgedOutcome {
   const baseline = getCandleAtOrAfter(result.inputTo);
   const actual = getCandleAtOrAfter(result.targetAt);
-  if (!baseline || !actual) return "pending";
+  const baselineBid = baseline?.bid ?? null;
+  const actualBid = actual?.bid ?? null;
 
-  const actualDirection = classifyMovement(actual.bid - baseline.bid);
-  return actualDirection === result.direction ? "correct" : "incorrect";
+  if (baselineBid === null || actualBid === null) {
+    return { outcome: "pending", baselineBid, actualBid };
+  }
+
+  const actualDirection = classifyMovement(actualBid - baselineBid);
+  const outcome = actualDirection === result.direction ? "correct" : "incorrect";
+  return { outcome, baselineBid, actualBid };
+}
+
+export function judgeOutcome(result: AnalysisResult): AnalysisOutcome {
+  return judgeOutcomeDetailed(result).outcome;
 }
 
 export function buildAccuracyStats(
