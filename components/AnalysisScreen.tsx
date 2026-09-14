@@ -54,12 +54,15 @@ export function AnalysisScreen() {
     setRunError(null);
     try {
       const res = await fetch("/api/analysis", { method: "POST" });
-      const body = (await res.json()) as { result?: Omit<AnalysisResultItem, "outcome">; error?: string };
+      const body = (await res.json()) as {
+        result?: Omit<AnalysisResultItem, "outcome" | "baselineBid" | "actualBid">;
+        error?: string;
+      };
       if (!res.ok || !body.result) {
         throw new Error(body.error ?? `Request failed with status ${res.status}`);
       }
-      // 実行直後は答え合わせの対象時刻がまだ来ていないため、必ず判定待ちになる。
-      const newResult: AnalysisResultItem = { ...body.result, outcome: "pending" };
+      // 実行直後は答え合わせの対象時刻がまだ来ていないため、必ず判定待ち・レート未確定になる。
+      const newResult: AnalysisResultItem = { ...body.result, outcome: "pending", baselineBid: null, actualBid: null };
       setListState((prev) =>
         prev.status === "loaded"
           ? {

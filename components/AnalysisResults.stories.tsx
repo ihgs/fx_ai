@@ -25,6 +25,8 @@ const sampleResults: AnalysisResultItem[] = [
     targetAt: "2026-09-12T11:00:00.000Z",
     trigger: "scheduled",
     outcome: "correct",
+    baselineBid: 149.802,
+    actualBid: 149.955,
   },
   {
     id: 1,
@@ -35,6 +37,8 @@ const sampleResults: AnalysisResultItem[] = [
     targetAt: "2026-09-12T10:00:00.000Z",
     trigger: "manual",
     outcome: "incorrect",
+    baselineBid: 149.703,
+    actualBid: 149.901,
   },
 ];
 
@@ -105,7 +109,12 @@ export const PendingOnly: Story = {
   args: {
     listState: {
       status: "loaded",
-      results: sampleResults.map((result) => ({ ...result, outcome: "pending" })),
+      results: sampleResults.map((result) => ({
+        ...result,
+        outcome: "pending",
+        baselineBid: null,
+        actualBid: null,
+      })),
       accuracy: [{ method: "v1", correct: 0, incorrect: 0, pending: 2, accuracyRate: null }],
     },
     isRunning: false,
