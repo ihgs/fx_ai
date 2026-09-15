@@ -167,18 +167,6 @@ export function insertAnalysisResult(input: NewAnalysisResult): AnalysisResult {
   };
 }
 
-export function getAnalysisResults(limit: number): AnalysisResult[] {
-  return getDb()
-    .prepare(
-      `SELECT id, executed_at as executedAt, method, direction, rationale,
-              target_at as targetAt, input_to as inputTo, trigger
-       FROM analysis_results
-       ORDER BY executed_at DESC
-       LIMIT ?`,
-    )
-    .all(limit) as unknown as AnalysisResult[];
-}
-
 /** 管理画面の一覧用: 指定件数分をオフセット付きで返す（新しい順）。 */
 export function getAnalysisResultsPage(offset: number, limit: number): AnalysisResult[] {
   return getDb()
@@ -201,6 +189,53 @@ export function countAnalysisResults(): number {
 export function deleteAnalysisResult(id: number): boolean {
   const info = getDb().prepare(`DELETE FROM analysis_results WHERE id = ?`).run(id);
   return Number(info.changes) > 0;
+}
+
+/** 指定methodの最新1件を返す（無ければnull）。デイリー見通し（daily-tokyo等）の表示用。 */
+export function getLatestAnalysisResultByMethod(method: string): AnalysisResult | null {
+  const row = getDb()
+    .prepare(
+      `SELECT id, executed_at as executedAt, method, direction, rationale,
+              target_at as targetAt, input_to as inputTo, trigger
+       FROM analysis_results
+       WHERE method = ?
+       ORDER BY executed_at DESC
+       LIMIT 1`,
+    )
+    .get(method) as AnalysisResult | undefined;
+  return row ?? null;
+}
+
+/** 指定methodの行が[fromIsoInclusive, toIsoExclusive)の範囲に既に存在するか（デイリー見通しの重複生成防止用）。 */
+export function hasAnalysisResultForDateAndMethod(
+  method: string,
+  fromIsoInclusive: string,
+  toIsoExclusive: string,
+): boolean {
+  const row = getDb()
+    .prepare(
+      `SELECT 1 FROM analysis_results
+       WHERE method = ? AND executed_at >= ? AND executed_at < ?
+       LIMIT 1`,
+    )
+    .get(method, fromIsoInclusive, toIsoExclusive);
+  return row !== undefined;
+}
+
+const RECENT_ANALYSIS_RESULTS_LIMIT = 500; // 想定外の大量データに備えた安全上限
+
+/** sinceIso以降の通常分析（method が daily- で始まるデイリー見通しは除く）を新しい順で返す。 */
+export function getRecentAnalysisResults(sinceIso: string): AnalysisResult[] {
+  return getDb()
+    .prepare(
+      `SELECT id, executed_at as executedAt, method, direction, rationale,
+              target_at as targetAt, input_to as inputTo, trigger
+       FROM analysis_results
+       WHERE method NOT LIKE 'daily-%' AND executed_at >= ?
+       ORDER BY executed_at DESC
+       LIMIT ?`,
+    )
+    .all(sinceIso, RECENT_ANALYSIS_RESULTS_LIMIT) as unknown as AnalysisResult[];
 }
 
 /** 週次表の集計用: [fromIso, toIso) の範囲の1分足を古い順で返す。 */

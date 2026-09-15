@@ -9,15 +9,16 @@ const SMA_SHORT_MINUTES = 15;
 const SMA_LONG_MINUTES = 60;
 const METHOD = "v2"; // spec 009でテクニカル指標を導入し v1 から変更（正答率統計を新旧で区別する）
 
-const AnalysisOutputSchema = z.object({
+// dailyOutlook.ts など他のAI分析機能からも再利用する（同じGeminiクライアント・出力スキーマを使うため）。
+export const AnalysisOutputSchema = z.object({
   direction: z.enum(["up", "down", "flat"]),
   rationale: z.string(),
 });
-const analysisOutputJsonSchema = omitDollarSchema(z.toJSONSchema(AnalysisOutputSchema));
+export const analysisOutputJsonSchema = omitDollarSchema(z.toJSONSchema(AnalysisOutputSchema));
 
-const MODEL = "gemini-3.6-flash";
+export const MODEL = "gemini-3.6-flash";
 
-const client = new GoogleGenAI({});
+export const client = new GoogleGenAI({});
 
 export type Indicators = {
   smaShort: number | null;
@@ -74,13 +75,13 @@ const jstFormatter = new Intl.DateTimeFormat("en-CA", {
 });
 
 /** UTC ISO文字列を「YYYY-MM-DD HH:mm JST」表記に変換する（AIが根拠説明でJSTを参照できるようにするため）。 */
-function toJstDisplay(isoTimestamp: string): string {
+export function toJstDisplay(isoTimestamp: string): string {
   const parts = jstFormatter.formatToParts(new Date(isoTimestamp));
   const get = (type: string) => parts.find((part) => part.type === type)?.value;
   return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")} JST`;
 }
 
-function tryParseJson(text: string): unknown {
+export function tryParseJson(text: string): unknown {
   try {
     return JSON.parse(text);
   } catch {
