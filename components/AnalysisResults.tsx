@@ -23,6 +23,8 @@ export type AnalysisResultItem = {
   baselineBid: number | null;
   /** 判定対象時刻（targetAt）以降の実レート。判定待ちでDBにまだ無ければnull。 */
   actualBid: number | null;
+  /** 上昇/下落予想が外れ、実際は横ばいだった場合はtrue。正答率の集計から除外されている（一覧には表示する）。 */
+  excludedFromStats: boolean;
 };
 
 export type AnalysisResultsProps = {

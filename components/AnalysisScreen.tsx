@@ -69,7 +69,13 @@ export function AnalysisScreen() {
         throw new Error(body.error ?? `Request failed with status ${res.status}`);
       }
       // 実行直後は答え合わせの対象時刻がまだ来ていないため、必ず判定待ち・レート未確定になる。
-      const newResult: AnalysisResultItem = { ...body.result, outcome: "pending", baselineBid: null, actualBid: null };
+      const newResult: AnalysisResultItem = {
+        ...body.result,
+        outcome: "pending",
+        baselineBid: null,
+        actualBid: null,
+        excludedFromStats: false,
+      };
       setListState((prev) =>
         prev.status === "loaded"
           ? {
