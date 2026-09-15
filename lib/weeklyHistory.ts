@@ -1,5 +1,12 @@
-const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
+import {
+  addDaysToDateString,
+  dowOfDateString,
+  jstDateAndDow,
+  jstWallClockToUtcIso,
+  pad2,
+  parseDateString,
+} from "@/lib/jst";
+
 const SESSION_START_MINUTES = 6 * 60 + 30; // 06:30
 const SLOT_MINUTES = 30;
 const SLOT_COUNT = 47; // 06:30始まり30分刻みで翌5:30まで（両端含む）
@@ -15,49 +22,6 @@ export type WeeklyHistory = {
   rows: WeeklyHistoryRow[];
 };
 export type WeeklyHistoryCandle = { timestamp: string; bid: number };
-
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
-}
-
-function parseDateString(dateStr: string): { y: number; m: number; d: number } {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return { y, m: m - 1, d };
-}
-
-function formatDateString(y: number, m: number, d: number): string {
-  return `${y}-${pad2(m + 1)}-${pad2(d)}`;
-}
-
-/** カレンダー日の加減算（時刻要素を持たない、Y-M-D単位の演算）。 */
-function addDaysToDateString(dateStr: string, days: number): string {
-  const { y, m, d } = parseDateString(dateStr);
-  const dt = new Date(Date.UTC(y, m, d) + days * DAY_MS);
-  return formatDateString(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate());
-}
-
-function dowOfDateString(dateStr: string): number {
-  const { y, m, d } = parseDateString(dateStr);
-  return new Date(Date.UTC(y, m, d)).getUTCDay();
-}
-
-/**
- * JSTの壁時計時刻（年月日時分）をUTC ISO文字列に変換する。
- * JSTは年間を通じてUTC+9固定（DSTなし）のため、タイムゾーンライブラリ無しで単純な引き算で成立する。
- */
-function jstWallClockToUtcIso(dateStr: string, hour: number, minute: number): string {
-  const { y, m, d } = parseDateString(dateStr);
-  return new Date(Date.UTC(y, m, d, hour, minute) - JST_OFFSET_MS).toISOString();
-}
-
-/** UTC時刻が属するJSTの日付・曜日を返す（表示用のtoJstDisplayとは逆方向の変換）。 */
-function jstDateAndDow(utc: Date): { dateStr: string; dow: number } {
-  const jst = new Date(utc.getTime() + JST_OFFSET_MS);
-  return {
-    dateStr: formatDateString(jst.getUTCFullYear(), jst.getUTCMonth(), jst.getUTCDate()),
-    dow: jst.getUTCDay(),
-  };
-}
 
 /** `now`が属するJST週（月曜始まり）の月曜日付を返す。 */
 export function currentWeekStartJst(now: Date = new Date()): string {

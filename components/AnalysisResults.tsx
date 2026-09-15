@@ -1,3 +1,5 @@
+import { DailySessionOutlook, type DailySessionOutlookProps } from "@/components/DailySessionOutlook";
+
 export type AnalysisOutcome = "correct" | "incorrect" | "pending";
 
 export type AccuracyStat = {
@@ -27,7 +29,12 @@ export type AnalysisResultsProps = {
   listState:
     | { status: "loading" }
     | { status: "error"; message: string }
-    | { status: "loaded"; results: AnalysisResultItem[]; accuracy: AccuracyStat[] };
+    | {
+        status: "loaded";
+        results: AnalysisResultItem[];
+        accuracy: AccuracyStat[];
+        dailyOutlook: DailySessionOutlookProps;
+      };
   isRunning: boolean;
   runError: string | null;
   onRunAnalysis: () => void;
@@ -106,6 +113,8 @@ export function AnalysisResults({
 
       {listState.status === "loaded" && (
         <div className="flex w-full max-w-md flex-col items-center gap-4">
+          <DailySessionOutlook {...listState.dailyOutlook} />
+
           {listState.accuracy.length > 0 && (
             <ul className="flex w-full flex-col gap-2 rounded-2xl bg-zinc-900 p-4 ring-1 ring-white/10">
               {listState.accuracy.map((stat) => (

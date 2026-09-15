@@ -7,9 +7,12 @@ import {
   type AnalysisResultsProps,
   type AnalysisResultItem,
 } from "@/components/AnalysisResults";
+import type { DailySessionOutlookProps } from "@/components/DailySessionOutlook";
 import { PullToRefresh } from "@/components/PullToRefresh";
 
 type ListState = AnalysisResultsProps["listState"];
+
+const EMPTY_DAILY_OUTLOOK: DailySessionOutlookProps = { tokyo: null, london: null, ny: null };
 
 function withPendingIncremented(accuracy: AccuracyStat[], method: string): AccuracyStat[] {
   const existing = accuracy.find((stat) => stat.method === method);
@@ -25,8 +28,12 @@ async function loadResults(): Promise<ListState> {
   try {
     const res = await fetch("/api/analysis");
     if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
-    const body = (await res.json()) as { results: AnalysisResultItem[]; accuracy: AccuracyStat[] };
-    return { status: "loaded", results: body.results, accuracy: body.accuracy };
+    const body = (await res.json()) as {
+      results: AnalysisResultItem[];
+      accuracy: AccuracyStat[];
+      dailyOutlook: DailySessionOutlookProps;
+    };
+    return { status: "loaded", results: body.results, accuracy: body.accuracy, dailyOutlook: body.dailyOutlook };
   } catch (error) {
     return { status: "error", message: error instanceof Error ? error.message : "Unknown error" };
   }
@@ -69,11 +76,13 @@ export function AnalysisScreen() {
               status: "loaded",
               results: [newResult, ...prev.results],
               accuracy: withPendingIncremented(prev.accuracy, newResult.method),
+              dailyOutlook: prev.dailyOutlook,
             }
           : {
               status: "loaded",
               results: [newResult],
               accuracy: withPendingIncremented([], newResult.method),
+              dailyOutlook: EMPTY_DAILY_OUTLOOK,
             },
       );
     } catch (error) {

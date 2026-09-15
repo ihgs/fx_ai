@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
 import { AnalysisResults, type AccuracyStat, type AnalysisResultItem } from "./AnalysisResults";
+import type { DailySessionOutlookProps } from "./DailySessionOutlook";
 
 const meta = {
   component: AnalysisResults,
@@ -42,6 +43,24 @@ const sampleResults: AnalysisResultItem[] = [
   },
 ];
 
+const emptyDailyOutlook: DailySessionOutlookProps = { tokyo: null, london: null, ny: null };
+
+const sampleDailyOutlook: DailySessionOutlookProps = {
+  tokyo: {
+    direction: "up",
+    rationale: "前営業日は終始堅調に推移しており、東京市場でも上昇継続を見込む。",
+    outcome: "correct",
+    targetAt: "2026-09-15T09:00:00.000Z",
+  },
+  london: {
+    direction: "flat",
+    rationale: "前営業日ロンドン時間はレンジ内推移で方向感に乏しく、横ばいを見込む。",
+    outcome: "pending",
+    targetAt: "2026-09-15T17:00:00.000Z",
+  },
+  ny: null,
+};
+
 const singleMethodAccuracy: AccuracyStat[] = [
   { method: "v1", correct: 8, incorrect: 3, pending: 2, accuracyRate: 8 / 11 },
 ];
@@ -74,7 +93,7 @@ export const ListError: Story = {
 
 export const Empty: Story = {
   args: {
-    listState: { status: "loaded", results: [], accuracy: [] },
+    listState: { status: "loaded", results: [], accuracy: [], dailyOutlook: emptyDailyOutlook },
     isRunning: false,
     runError: null,
     onRunAnalysis: fn(),
@@ -85,7 +104,28 @@ export const Empty: Story = {
 export const WithResults: Story = {
   name: "With Results",
   args: {
-    listState: { status: "loaded", results: sampleResults, accuracy: singleMethodAccuracy },
+    listState: {
+      status: "loaded",
+      results: sampleResults,
+      accuracy: singleMethodAccuracy,
+      dailyOutlook: emptyDailyOutlook,
+    },
+    isRunning: false,
+    runError: null,
+    onRunAnalysis: fn(),
+  },
+  globals: { viewport: { value: "mobilePortrait" } },
+};
+
+export const WithDailyOutlook: Story = {
+  name: "With Daily Outlook",
+  args: {
+    listState: {
+      status: "loaded",
+      results: sampleResults,
+      accuracy: singleMethodAccuracy,
+      dailyOutlook: sampleDailyOutlook,
+    },
     isRunning: false,
     runError: null,
     onRunAnalysis: fn(),
@@ -96,7 +136,12 @@ export const WithResults: Story = {
 export const MultipleMethods: Story = {
   name: "Multiple Methods",
   args: {
-    listState: { status: "loaded", results: sampleResults, accuracy: multiMethodAccuracy },
+    listState: {
+      status: "loaded",
+      results: sampleResults,
+      accuracy: multiMethodAccuracy,
+      dailyOutlook: emptyDailyOutlook,
+    },
     isRunning: false,
     runError: null,
     onRunAnalysis: fn(),
@@ -116,6 +161,7 @@ export const PendingOnly: Story = {
         actualBid: null,
       })),
       accuracy: [{ method: "v1", correct: 0, incorrect: 0, pending: 2, accuracyRate: null }],
+      dailyOutlook: emptyDailyOutlook,
     },
     isRunning: false,
     runError: null,
@@ -126,7 +172,12 @@ export const PendingOnly: Story = {
 
 export const Running: Story = {
   args: {
-    listState: { status: "loaded", results: sampleResults, accuracy: singleMethodAccuracy },
+    listState: {
+      status: "loaded",
+      results: sampleResults,
+      accuracy: singleMethodAccuracy,
+      dailyOutlook: emptyDailyOutlook,
+    },
     isRunning: true,
     runError: null,
     onRunAnalysis: fn(),
@@ -137,7 +188,12 @@ export const Running: Story = {
 export const RunError: Story = {
   name: "Run Error",
   args: {
-    listState: { status: "loaded", results: sampleResults, accuracy: singleMethodAccuracy },
+    listState: {
+      status: "loaded",
+      results: sampleResults,
+      accuracy: singleMethodAccuracy,
+      dailyOutlook: emptyDailyOutlook,
+    },
     isRunning: false,
     runError: "AI分析の呼び出しに失敗しました",
     onRunAnalysis: fn(),
@@ -148,7 +204,12 @@ export const RunError: Story = {
 export const RefreshError: Story = {
   name: "Refresh Error",
   args: {
-    listState: { status: "loaded", results: sampleResults, accuracy: singleMethodAccuracy },
+    listState: {
+      status: "loaded",
+      results: sampleResults,
+      accuracy: singleMethodAccuracy,
+      dailyOutlook: emptyDailyOutlook,
+    },
     isRunning: false,
     runError: null,
     onRunAnalysis: fn(),
