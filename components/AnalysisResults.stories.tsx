@@ -28,6 +28,7 @@ const sampleResults: AnalysisResultItem[] = [
     outcome: "correct",
     baselineBid: 149.802,
     actualBid: 149.955,
+    excludedFromStats: false,
   },
   {
     id: 1,
@@ -40,6 +41,7 @@ const sampleResults: AnalysisResultItem[] = [
     outcome: "incorrect",
     baselineBid: 149.703,
     actualBid: 149.901,
+    excludedFromStats: false,
   },
 ];
 

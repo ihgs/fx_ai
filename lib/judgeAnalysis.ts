@@ -24,6 +24,8 @@ export type JudgedOutcome = {
   baselineBid: number | null;
   /** 判定対象時刻（targetAt）以降の実レート。DBにまだ無ければnull。 */
   actualBid: number | null;
+  /** 上昇/下落予想が外れ、実際は横ばいだった場合はtrue。正答率の集計対象から除外する（一覧表示は対象外にしない）。 */
+  excludedFromStats: boolean;
 };
 
 /**
@@ -38,12 +40,14 @@ export function judgeOutcomeDetailed(result: AnalysisResult): JudgedOutcome {
   const actualBid = actual?.bid ?? null;
 
   if (baselineBid === null || actualBid === null) {
-    return { outcome: "pending", baselineBid, actualBid };
+    return { outcome: "pending", baselineBid, actualBid, excludedFromStats: false };
   }
 
   const actualDirection = classifyMovement(actualBid - baselineBid);
   const outcome = actualDirection === result.direction ? "correct" : "incorrect";
-  return { outcome, baselineBid, actualBid };
+  const excludedFromStats =
+    outcome === "incorrect" && (result.direction === "up" || result.direction === "down") && actualDirection === "flat";
+  return { outcome, baselineBid, actualBid, excludedFromStats };
 }
 
 export function judgeOutcome(result: AnalysisResult): AnalysisOutcome {
@@ -51,11 +55,12 @@ export function judgeOutcome(result: AnalysisResult): AnalysisOutcome {
 }
 
 export function buildAccuracyStats(
-  resultsWithOutcome: Array<{ method: string; outcome: AnalysisOutcome }>,
+  resultsWithOutcome: Array<{ method: string; outcome: AnalysisOutcome; excludedFromStats?: boolean }>,
 ): AccuracyStat[] {
   const stats = new Map<string, AccuracyStat>();
 
-  for (const { method, outcome } of resultsWithOutcome) {
+  for (const { method, outcome, excludedFromStats } of resultsWithOutcome) {
+    if (excludedFromStats) continue;
     const stat = stats.get(method) ?? { method, correct: 0, incorrect: 0, pending: 0, accuracyRate: null };
     stat[outcome] += 1;
     stats.set(method, stat);
