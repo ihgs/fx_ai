@@ -11,6 +11,11 @@ const ADMIN_LINKS = [
     title: "レートヒストリー（週次表）",
     description: "週単位・時刻×曜日のレート推移表",
   },
+  {
+    href: "/admin/export",
+    title: "データダウンロード",
+    description: "期間を指定して分析結果・レートヒストリーをJSONでダウンロード",
+  },
 ];
 
 export default function AdminTopPage() {
