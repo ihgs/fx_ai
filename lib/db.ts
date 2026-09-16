@@ -238,6 +238,19 @@ export function getRecentAnalysisResults(sinceIso: string): AnalysisResult[] {
     .all(sinceIso, RECENT_ANALYSIS_RESULTS_LIMIT) as unknown as AnalysisResult[];
 }
 
+/** 管理画面のダウンロード用: [fromIso, toIso) の範囲の分析結果を全method対象・古い順で返す。 */
+export function getAnalysisResultsInRange(fromIso: string, toIso: string): AnalysisResult[] {
+  return getDb()
+    .prepare(
+      `SELECT id, executed_at as executedAt, method, direction, rationale,
+              target_at as targetAt, input_to as inputTo, trigger
+       FROM analysis_results
+       WHERE executed_at >= ? AND executed_at < ?
+       ORDER BY executed_at ASC`,
+    )
+    .all(fromIso, toIso) as unknown as AnalysisResult[];
+}
+
 /** 週次表の集計用: [fromIso, toIso) の範囲の1分足を古い順で返す。 */
 export function getCandlesInRange(fromIso: string, toIso: string): RateHistoryPoint[] {
   return getDb()
