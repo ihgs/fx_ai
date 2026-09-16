@@ -20,6 +20,34 @@ export const MODEL = "gemini-3.6-flash";
 
 export const client = new GoogleGenAI({});
 
+const GEMINI_MAX_RETRIES = 3;
+const GEMINI_RETRY_DELAY_MS = 60_000; // Gemini APIが一時的にエラーを返すことが多いため、失敗時は60秒間隔でリトライする
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Gemini API呼び出しの一時的な失敗に対応する。失敗時は60秒間隔で最大3回までリトライし、
+ * それでも失敗した場合は最後のエラーを投げる（呼び出し元がリトライを意識する必要はない）。
+ */
+export async function generateContentWithRetry(
+  request: Parameters<typeof client.models.generateContent>[0],
+) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await client.models.generateContent(request);
+    } catch (error) {
+      if (attempt > GEMINI_MAX_RETRIES) throw error;
+      logger.warn(
+        `[Gemini] API呼び出しに失敗（${attempt}/${GEMINI_MAX_RETRIES}回目）。${GEMINI_RETRY_DELAY_MS / 1000}秒後にリトライします`,
+        { error: error instanceof Error ? error.message : String(error) },
+      );
+      await sleep(GEMINI_RETRY_DELAY_MS);
+    }
+  }
+}
+
 export type Indicators = {
   smaShort: number | null;
   smaLong: number | null;
@@ -126,7 +154,7 @@ export async function runAnalysis(trigger: "manual" | "scheduled"): Promise<Anal
   const executedAt = new Date();
   const indicators = computeIndicators(history);
 
-  const response = await client.models.generateContent({
+  const response = await generateContentWithRetry({
     model: MODEL,
     contents: buildPrompt(history, indicators),
     config: {
