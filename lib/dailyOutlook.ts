@@ -1,4 +1,10 @@
-import { AnalysisOutputSchema, analysisOutputJsonSchema, client, MODEL, tryParseJson } from "@/lib/analyzeRate";
+import {
+  AnalysisOutputSchema,
+  analysisOutputJsonSchema,
+  generateContentWithRetry,
+  MODEL,
+  tryParseJson,
+} from "@/lib/analyzeRate";
 import {
   getCandlesInRange,
   hasAnalysisResultForDateAndMethod,
@@ -127,7 +133,7 @@ export async function runDailyOutlookForSession(
   const prevDayDateStr = previousBusinessDayJst(todayDateStr);
   const prompt = buildDailyOutlookPrompt(session, prevDayDateStr, sessionStats, overallStats);
 
-  const response = await client.models.generateContent({
+  const response = await generateContentWithRetry({
     model: MODEL,
     contents: prompt,
     config: {
