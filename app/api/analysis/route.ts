@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getLatestAnalysisResultByMethod, getRecentAnalysisResults, type AnalysisResult } from "@/lib/db";
-import { runAnalysis } from "@/lib/analyzeRate";
+import { runAnalysis, runAnalysisV2 } from "@/lib/analyzeRate";
 import { buildAccuracyStats, judgeOutcome, judgeOutcomeDetailed, type AnalysisOutcome } from "@/lib/judgeAnalysis";
 
 const RESULTS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 直近1週間
@@ -35,6 +35,11 @@ export async function GET() {
 export async function POST() {
   try {
     const result = await runAnalysis("manual");
+    // v3との精度比較のため、同一期間にv2（旧プロンプト）も並行実行する（比較完了後に削除する）。
+    // レスポンスはv3の結果のみを返すため、v2の成否は待たない。
+    runAnalysisV2("manual").catch((error) => {
+      console.error("[runAnalysisV2] manual analysis failed:", error);
+    });
     return NextResponse.json({ result });
   } catch (error) {
     return NextResponse.json(
