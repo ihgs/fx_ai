@@ -7,7 +7,8 @@ const HISTORY_MINUTES = 120;
 const TARGET_HORIZON_MS = 60 * 60 * 1000; // 1時間（Design: target_at）
 const SMA_SHORT_MINUTES = 15;
 const SMA_LONG_MINUTES = 60;
-const METHOD = "v2"; // spec 009でテクニカル指標を導入し v1 から変更（正答率統計を新旧で区別する）
+const LONG_TERM_MINUTES = 24 * 60; // 長期トレンド算出用の窓幅（24時間）
+const METHOD = "v3"; // spec 016で乖離幅・長期トレンド指標とプロンプト改訂を導入し v2 から変更（正答率統計を新旧で区別する）
 
 // dailyOutlook.ts など他のAI分析機能からも再利用する（同じGeminiクライアント・出力スキーマを使うため）。
 export const AnalysisOutputSchema = z.object({
@@ -55,6 +56,8 @@ export type Indicators = {
   volatility: number;
   high: number;
   low: number;
+  /** 現在値の短期移動平均線からの乖離幅（ボラティリティ＝標準偏差の倍数）。算出不可はnull。 */
+  overExtension: number | null;
 };
 
 function average(values: number[]): number {
@@ -77,19 +80,46 @@ export function computeIndicators(history: RateHistoryPoint[]): Indicators {
   const bids = history.map((p) => p.bid);
   const changeRate = ((bids[bids.length - 1] - bids[0]) / bids[0]) * 100;
   const volatility = sampleStdDev(bids);
+  const smaShort = sma(history, SMA_SHORT_MINUTES);
+  const overExtension = smaShort === null || volatility === 0 ? null : (bids[bids.length - 1] - smaShort) / volatility;
 
   return {
-    smaShort: sma(history, SMA_SHORT_MINUTES),
+    smaShort,
     smaLong: sma(history, SMA_LONG_MINUTES),
     changeRate,
     volatility,
     high: Math.max(...bids),
     low: Math.min(...bids),
+    overExtension,
   };
+}
+
+export type LongTermTrend = {
+  /** 長期窓（24時間）の始値・終値比較による変化率（%） */
+  changeRate: number;
+};
+
+/**
+ * 直近120分より長い期間（24時間）のトレンドを算出する。直近の押し目・戻りを長期トレンドの文脈で
+ * 判断できるようにするため（Req 2）。窓幅（LONG_TERM_MINUTES）に満たない場合は算出不可としてnullを返す。
+ */
+export function computeLongTermTrend(history: RateHistoryPoint[]): LongTermTrend | null {
+  if (history.length < LONG_TERM_MINUTES) return null;
+  const bids = history.map((p) => p.bid);
+  const changeRate = ((bids[bids.length - 1] - bids[0]) / bids[0]) * 100;
+  return { changeRate };
 }
 
 function formatSma(value: number | null): string {
   return value === null ? "算出不可（データ不足）" : value.toFixed(3);
+}
+
+function formatOverExtension(value: number | null): string {
+  return value === null ? "算出不可（データ不足）" : `${value >= 0 ? "+" : ""}${value.toFixed(2)}σ`;
+}
+
+function formatLongTermTrend(trend: LongTermTrend | null): string {
+  return trend === null ? "算出不可（データ不足）" : `${trend.changeRate >= 0 ? "+" : ""}${trend.changeRate.toFixed(3)}%`;
 }
 
 const jstFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -123,7 +153,16 @@ function omitDollarSchema(schema: Record<string, unknown>): Record<string, unkno
   return rest;
 }
 
-function buildPrompt(history: RateHistoryPoint[], indicators: Indicators): string {
+/**
+ * AI分析（analyzeRate.ts / dailyOutlook.ts共通）の判断基準の注意書き。移動平均クロスなど遅行指標や
+ * 直近高値・安値の更新のみを根拠にup/downと断定し、直後に反転するケースが多かったため追加した。
+ */
+export const ANALYSIS_JUDGMENT_GUIDANCE = `判定にあたっては以下の点に注意してください。
+- 直近で高値または安値を更新した直後は、その反動でモメンタムが一巡し反転・伸び悩みが起きやすい点に注意し、更新直後の値動きだけで安易にその方向への継続と判断しないでください。
+- 移動平均線のクロスなど単一の指標のみを根拠にせず、複数の指標が同じ方向を示している場合に限りup/downと判定してください。
+- 明確な根拠がそろわない場合は、無理にup/downを判断せずflatを選択してください。`;
+
+function buildPrompt(history: RateHistoryPoint[], indicators: Indicators, longTermTrend: LongTermTrend | null): string {
   const lines = history.map((p) => `${toJstDisplay(p.timestamp)}: ${p.bid.toFixed(3)}`).join("\n");
   return `以下はUSD/JPYの直近${history.length}分間、1分足の終値（bid）の推移です（時刻は日本時間）。
 
@@ -135,9 +174,14 @@ ${lines}
 - 期間内変化率: ${indicators.changeRate.toFixed(3)}%
 - ボラティリティ（標準偏差）: ${indicators.volatility.toFixed(3)}
 - 期間内高値: ${indicators.high.toFixed(3)} / 安値: ${indicators.low.toFixed(3)}
+- 短期移動平均線からの乖離幅: ${formatOverExtension(indicators.overExtension)}
+- 直近24時間の変化率: ${formatLongTermTrend(longTermTrend)}
 
-この推移とテクニカル指標をもとに、今後1時間程度のUSD/JPYの見通しを up（上昇） / down（下落） / flat（横ばい） のいずれかで判定し、
-その根拠を日本語で2〜3文程度で簡潔に説明してください。`;
+この推移とテクニカル指標をもとに、今後1時間程度のUSD/JPYの見通しを up（上昇） / down（下落） / flat（横ばい） のいずれかで判定してください。
+
+${ANALYSIS_JUDGMENT_GUIDANCE}
+
+判定結果はup/down/flatのいずれかとし、その根拠を日本語で2〜3文程度で簡潔に説明してください。`;
 }
 
 /**
@@ -153,10 +197,11 @@ export async function runAnalysis(trigger: "manual" | "scheduled"): Promise<Anal
 
   const executedAt = new Date();
   const indicators = computeIndicators(history);
+  const longTermTrend = computeLongTermTrend(getRecentCandles(LONG_TERM_MINUTES));
 
   const response = await generateContentWithRetry({
     model: MODEL,
-    contents: buildPrompt(history, indicators),
+    contents: buildPrompt(history, indicators, longTermTrend),
     config: {
       responseMimeType: "application/json",
       responseJsonSchema: analysisOutputJsonSchema,
