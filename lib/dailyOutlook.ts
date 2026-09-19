@@ -1,4 +1,5 @@
 import {
+  ANALYSIS_JUDGMENT_GUIDANCE,
   AnalysisOutputSchema,
   analysisOutputJsonSchema,
   generateContentWithRetry,
@@ -102,8 +103,11 @@ ${formatStats(sessionStats.london)}
 ${formatStats(sessionStats.ny)}
 
 この情報をもとに、本日の${label}市場（${def.startHour}:00〜${endLabel}、日本時間）のUSD/JPYの見通しを
-up（上昇） / down（下落） / flat（横ばい） のいずれかで判定し、
-その根拠を日本語で2〜3文程度で簡潔に説明してください。`;
+up（上昇） / down（下落） / flat（横ばい） のいずれかで判定してください。
+
+${ANALYSIS_JUDGMENT_GUIDANCE}
+
+判定結果はup/down/flatのいずれかとし、その根拠を日本語で2〜3文程度で簡潔に説明してください。`;
 }
 
 function getSessionCandles(dateStr: string, session: Session): RateHistoryPoint[] {
