@@ -1,5 +1,5 @@
 const COLLECTION_INTERVAL_MS = 60_000; // 1分（Design: 定期実行）
-const ANALYSIS_INTERVAL_MS = 3 * 60 * 60_000; // 3時間（一時的にv2/v3並行実行のAPI呼び出し回数を抑えるため、本来の1時間から変更）
+const ANALYSIS_INTERVAL_MS = 60 * 60_000; // 1時間（Design: AI分析の定期実行。市場が開いている間は終日実行する）
 const DAILY_OUTLOOK_CHECK_INTERVAL_MS = 60_000; // 1分毎にJST 6:30到達をチェックする
 const DAILY_OUTLOOK_JST_HOUR = 6;
 const DAILY_OUTLOOK_JST_MINUTE = 30;
