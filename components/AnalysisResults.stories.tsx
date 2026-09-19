@@ -45,6 +45,11 @@ const sampleResults: AnalysisResultItem[] = [
   },
 ];
 
+const mixedMethodResults: AnalysisResultItem[] = [
+  { ...sampleResults[0], id: 3, method: "v2" },
+  ...sampleResults,
+];
+
 const emptyDailyOutlook: DailySessionOutlookProps = { tokyo: null, london: null, ny: null };
 
 const sampleDailyOutlook: DailySessionOutlookProps = {
@@ -140,7 +145,7 @@ export const MultipleMethods: Story = {
   args: {
     listState: {
       status: "loaded",
-      results: sampleResults,
+      results: mixedMethodResults,
       accuracy: multiMethodAccuracy,
       dailyOutlook: emptyDailyOutlook,
     },

@@ -168,7 +168,9 @@ export function AnalysisResults({
                     </div>
                     <span className="text-xs text-zinc-500">{formatDateTime(result.executedAt)}</span>
                   </div>
-                  <p className="mt-1 text-xs text-zinc-500">判定対象: {formatDateTime(result.targetAt)}</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    判定対象: {formatDateTime(result.targetAt)}（{result.method}）
+                  </p>
                   <p className="mt-1 text-xs text-zinc-500">
                     分析時 {formatBid(result.baselineBid)} → 結果 {formatBid(result.actualBid)}
                   </p>
