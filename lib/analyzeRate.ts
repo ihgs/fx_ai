@@ -184,6 +184,43 @@ ${ANALYSIS_JUDGMENT_GUIDANCE}
 判定結果はup/down/flatのいずれかとし、その根拠を日本語で2〜3文程度で簡潔に説明してください。`;
 }
 
+async function generateAndSaveAnalysis(
+  method: string,
+  prompt: string,
+  trigger: "manual" | "scheduled",
+  executedAt: Date,
+  history: RateHistoryPoint[],
+): Promise<AnalysisResult> {
+  const response = await generateContentWithRetry({
+    model: MODEL,
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseJsonSchema: analysisOutputJsonSchema,
+    },
+  });
+
+  const parsed = response.text ? AnalysisOutputSchema.safeParse(tryParseJson(response.text)) : null;
+  if (!parsed || !parsed.success) {
+    throw new Error(`AI分析の出力を解析できませんでした（method=${method}）`);
+  }
+
+  const result = insertAnalysisResult({
+    executedAt: executedAt.toISOString(),
+    method,
+    direction: parsed.data.direction,
+    rationale: parsed.data.rationale,
+    targetAt: new Date(executedAt.getTime() + TARGET_HORIZON_MS).toISOString(),
+    inputFrom: history[0].timestamp,
+    inputTo: history[history.length - 1].timestamp,
+    trigger,
+  });
+
+  logger.info(`[runAnalysis] completed trigger=${trigger} method=${method} direction=${result.direction}`);
+
+  return result;
+}
+
 /**
  * 直近のレート履歴を入力にAI分析を実行し、結果をDBに保存する。
  * レート履歴が無い、AI API呼び出し失敗、DB保存失敗のいずれの場合も例外を投げる。
@@ -199,32 +236,42 @@ export async function runAnalysis(trigger: "manual" | "scheduled"): Promise<Anal
   const indicators = computeIndicators(history);
   const longTermTrend = computeLongTermTrend(getRecentCandles(LONG_TERM_MINUTES));
 
-  const response = await generateContentWithRetry({
-    model: MODEL,
-    contents: buildPrompt(history, indicators, longTermTrend),
-    config: {
-      responseMimeType: "application/json",
-      responseJsonSchema: analysisOutputJsonSchema,
-    },
-  });
+  return generateAndSaveAnalysis(METHOD, buildPrompt(history, indicators, longTermTrend), trigger, executedAt, history);
+}
 
-  const parsed = response.text ? AnalysisOutputSchema.safeParse(tryParseJson(response.text)) : null;
-  if (!parsed || !parsed.success) {
-    throw new Error("AI分析の出力を解析できませんでした");
+const METHOD_V2 = "v2";
+
+function buildPromptV2(history: RateHistoryPoint[], indicators: Indicators): string {
+  const lines = history.map((p) => `${toJstDisplay(p.timestamp)}: ${p.bid.toFixed(3)}`).join("\n");
+  return `以下はUSD/JPYの直近${history.length}分間、1分足の終値（bid）の推移です（時刻は日本時間）。
+
+${lines}
+
+【テクニカル指標】
+- 短期移動平均（${SMA_SHORT_MINUTES}分）: ${formatSma(indicators.smaShort)}
+- 長期移動平均（${SMA_LONG_MINUTES}分）: ${formatSma(indicators.smaLong)}
+- 期間内変化率: ${indicators.changeRate.toFixed(3)}%
+- ボラティリティ（標準偏差）: ${indicators.volatility.toFixed(3)}
+- 期間内高値: ${indicators.high.toFixed(3)} / 安値: ${indicators.low.toFixed(3)}
+
+この推移とテクニカル指標をもとに、今後1時間程度のUSD/JPYの見通しを up（上昇） / down（下落） / flat（横ばい） のいずれかで判定し、
+その根拠を日本語で2〜3文程度で簡潔に説明してください。`;
+}
+
+/**
+ * method="v3"（乖離幅・長期トレンド指標とプロンプト改訂を導入したバージョン）との精度比較のため、
+ * 同一期間に旧プロンプト（spec 016適用前、method="v2"）でも分析を実行する。
+ * v3とは独立した比較用の仕組みであり、v3側の成否に関わらず単独で動作する。
+ * 比較が完了したら（v2の呼び出し元ごと）削除してよい。
+ */
+export async function runAnalysisV2(trigger: "manual" | "scheduled"): Promise<AnalysisResult> {
+  const history = getRecentCandles(HISTORY_MINUTES);
+  if (history.length === 0) {
+    throw new Error("レート履歴がまだありません");
   }
 
-  const result = insertAnalysisResult({
-    executedAt: executedAt.toISOString(),
-    method: METHOD,
-    direction: parsed.data.direction,
-    rationale: parsed.data.rationale,
-    targetAt: new Date(executedAt.getTime() + TARGET_HORIZON_MS).toISOString(),
-    inputFrom: history[0].timestamp,
-    inputTo: history[history.length - 1].timestamp,
-    trigger,
-  });
+  const executedAt = new Date();
+  const indicators = computeIndicators(history);
 
-  logger.info(`[runAnalysis] completed trigger=${trigger} method=${METHOD} direction=${result.direction}`);
-
-  return result;
+  return generateAndSaveAnalysis(METHOD_V2, buildPromptV2(history, indicators), trigger, executedAt, history);
 }

@@ -60,7 +60,7 @@ export async function register() {
 
   const { initDb } = await import("@/lib/db");
   const { collectRate } = await import("@/lib/collectRate");
-  const { runAnalysis } = await import("@/lib/analyzeRate");
+  const { runAnalysis, runAnalysisV2 } = await import("@/lib/analyzeRate");
   const { runDailyOutlook } = await import("@/lib/dailyOutlook");
   const { logger } = await import("@/lib/logger");
 
@@ -80,6 +80,10 @@ export async function register() {
     }
     runAnalysis("scheduled").catch((error) => {
       console.error("[runAnalysis] scheduled analysis failed:", error);
+    });
+    // v3との精度比較のため、同一期間にv2（旧プロンプト）も並行実行する（比較完了後に削除する）。
+    runAnalysisV2("scheduled").catch((error) => {
+      console.error("[runAnalysisV2] scheduled analysis failed:", error);
     });
   }, ANALYSIS_INTERVAL_MS);
 
