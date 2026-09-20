@@ -5,14 +5,21 @@
 # Usage:
 #   GEMINI_API_KEY=... ./scripts/docker-run.sh
 #   PORT=8080 GEMINI_API_KEY=... ./scripts/docker-run.sh
+#   （プロジェクトルートに .env / .env.local があれば自動で読み込むため、そちらにGEMINI_API_KEY等を書いてもよい）
 set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+# プロジェクトルートの .env / .env.local を読み込む（.env.localが優先、Next.jsの規約に合わせる）
+set -a
+[ -f .env ] && source .env
+[ -f .env.local ] && source .env.local
+set +a
 
 IMAGE_NAME="fx_ai"
 VOLUME_NAME="fx_ai_data"
 PORT="${PORT:-3000}"
 : "${GEMINI_API_KEY:?GEMINI_API_KEY environment variable is required}"
-
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 docker build -t "$IMAGE_NAME" .
 
